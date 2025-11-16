@@ -3,6 +3,8 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import ErrorPage from "./pages/Error";
 import RootLayout from "./layouts/RootLayout";
 import { PATHS } from "./constants/Navigation";
+import SchedulePage from "./pages/Schedule";
+import DayViewPage from "./pages/DayView";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -15,6 +17,10 @@ const router = createBrowserRouter([
                 path: item.link,
                 element: item.element,
             })),
+            {
+                path: "/schedule/:day",
+                element: <DayViewPage />,
+            },
         ],
     },
 ]);

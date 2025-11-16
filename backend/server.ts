@@ -1,8 +1,11 @@
+import "dotenv/config";
 import path from "path";
-import express, { Express } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
-import { WeatherResponse } from "@full-stack/types";
+import { WeatherResponse, CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, ScheduledCourse, ApiError } from "@full-stack/types";
 import fetch from "node-fetch";
+import { Client, TravelMode } from "@googlemaps/google-maps-services-js";
+import { db, auth } from "./firebase";
 
 const app: Express = express();
 
@@ -12,6 +15,355 @@ const port = 8080;
 app.use(cors());
 app.use(express.json());
 
+// Google Maps client
+const googleMapsClient = new Client({});
+
+// Rate limiting for Cornell API (1 request per second)
+let lastCornellRequest = 0;
+const CORNELL_RATE_LIMIT_MS = 1000;
+
+const rateLimitCornell = async (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastCornellRequest;
+    
+    if (timeSinceLastRequest < CORNELL_RATE_LIMIT_MS) {
+        await new Promise(resolve => setTimeout(resolve, CORNELL_RATE_LIMIT_MS - timeSinceLastRequest));
+    }
+    
+    lastCornellRequest = Date.now();
+    next();
+};
+
+// Firebase Auth middleware
+const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
+    if (!auth) {
+        res.status(503).json({ error: "Firebase not initialized" } as ApiError);
+        return;
+    }
+    
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).json({ error: "Unauthorized" } as ApiError);
+        return;
+    }
+    
+    const token = authHeader.split("Bearer ")[1];
+    
+    try {
+        const decodedToken = await auth.verifyIdToken(token);
+        (req as any).userId = decodedToken.uid;
+        next();
+    } catch (error) {
+        console.error("Auth error:", error);
+        res.status(401).json({ error: "Invalid token" } as ApiError);
+    }
+};
+
+// Cornell API Proxy Endpoints
+app.get("/api/cornell/search", rateLimitCornell, async (req, res) => {
+    try {
+        const { q, roster = "FA25", subject } = req.query;
+        
+        if (!q && !subject) {
+            res.status(400).json({ error: "Either 'q' or 'subject' parameter is required" } as ApiError);
+            return;
+        }
+        
+        const params = new URLSearchParams();
+        params.append("roster", roster as string);
+        if (q) params.append("q", q as string);
+        if (subject) params.append("subject", subject as string);
+        
+        const url = `https://classes.cornell.edu/api/2.0/search/classes.json?${params.toString()}`;
+        const response = await fetch(url);
+        const data = (await response.json()) as CornellClassResponse;
+        
+        res.json(data);
+    } catch (error) {
+        console.error("Cornell API error:", error);
+        res.status(500).json({ error: "Failed to fetch from Cornell API" } as ApiError);
+    }
+});
+
+app.get("/api/cornell/subjects", rateLimitCornell, async (req, res) => {
+    try {
+        const { roster = "FA25" } = req.query;
+        const url = `https://classes.cornell.edu/api/2.0/config/subjects.json?roster=${roster}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        console.error("Cornell API error:", error);
+        res.status(500).json({ error: "Failed to fetch subjects" } as ApiError);
+    }
+});
+
+// Google Maps API Proxy Endpoints
+app.post("/api/geocode", async (req, res) => {
+    try {
+        const { address } = req.body;
+        
+        if (!address) {
+            res.status(400).json({ error: "Address is required" } as ApiError);
+            return;
+        }
+        
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            res.status(500).json({ error: "Google Maps API key not configured" } as ApiError);
+            return;
+        }
+        
+        // Add "Ithaca, NY" to help with Cornell buildings
+        const fullAddress = `${address}, Ithaca, NY`;
+        
+        const response = await googleMapsClient.geocode({
+            params: {
+                address: fullAddress,
+                key: process.env.GOOGLE_MAPS_API_KEY,
+            },
+        });
+        
+        if (response.data.results.length === 0) {
+            res.status(404).json({ error: "Address not found" } as ApiError);
+            return;
+        }
+        
+        const result = response.data.results[0];
+        const output: GeocodeResponse = {
+            lat: result.geometry.location.lat,
+            lng: result.geometry.location.lng,
+            formattedAddress: result.formatted_address,
+        };
+        
+        res.json(output);
+    } catch (error) {
+        console.error("Geocoding error:", error);
+        res.status(500).json({ error: "Failed to geocode address" } as ApiError);
+    }
+});
+
+app.post("/api/directions", async (req, res) => {
+    try {
+        const { origin, destination } = req.body;
+        
+        if (!origin || !destination) {
+            res.status(400).json({ error: "Origin and destination are required" } as ApiError);
+            return;
+        }
+        
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            res.status(500).json({ error: "Google Maps API key not configured" } as ApiError);
+            return;
+        }
+        
+        const response = await googleMapsClient.directions({
+            params: {
+                origin: typeof origin === "string" ? origin : `${origin.lat},${origin.lng}`,
+                destination: typeof destination === "string" ? destination : `${destination.lat},${destination.lng}`,
+                mode: TravelMode.walking,
+                key: process.env.GOOGLE_MAPS_API_KEY,
+            },
+        });
+        
+        if (response.data.routes.length === 0) {
+            res.status(404).json({ error: "No route found" } as ApiError);
+            return;
+        }
+        
+        const route = response.data.routes[0];
+        const leg = route.legs[0];
+        
+        const output: DirectionsResponse = {
+            distance: leg.distance.value, // in meters
+            duration: leg.duration.value, // in seconds
+            polyline: route.overview_polyline.points,
+            steps: leg.steps.map(step => ({
+                distance: step.distance.value,
+                duration: step.duration.value,
+                instruction: step.html_instructions.replace(/<[^>]*>/g, ""), // Strip HTML
+                startLocation: {
+                    lat: step.start_location.lat,
+                    lng: step.start_location.lng,
+                },
+                endLocation: {
+                    lat: step.end_location.lat,
+                    lng: step.end_location.lng,
+                },
+            })),
+        };
+        
+        res.json(output);
+    } catch (error) {
+        console.error("Directions error:", error);
+        res.status(500).json({ error: "Failed to get directions" } as ApiError);
+    }
+});
+
+// Auth verification endpoint
+app.post("/api/auth/verify", verifyAuth, async (req, res) => {
+    res.json({ valid: true, userId: (req as any).userId });
+});
+
+// Schedule CRUD Endpoints
+app.get("/api/schedules", verifyAuth, async (req, res) => {
+    if (!db) {
+        res.status(503).json({ error: "Firebase not initialized" } as ApiError);
+        return;
+    }
+    
+    try {
+        const userId = (req as any).userId;
+        const { roster = "FA25" } = req.query;
+        
+        const schedulesSnapshot = await db
+            .collection("schedules")
+            .where("userId", "==", userId)
+            .where("roster", "==", roster)
+            .get();
+        
+        const schedules = schedulesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as Schedule[];
+        
+        res.json({ schedules });
+    } catch (error) {
+        console.error("Get schedules error:", error);
+        res.status(500).json({ error: "Failed to get schedules" } as ApiError);
+    }
+});
+
+app.post("/api/schedules", verifyAuth, async (req, res) => {
+    if (!db) {
+        res.status(503).json({ error: "Firebase not initialized" } as ApiError);
+        return;
+    }
+    
+    try {
+        const userId = (req as any).userId;
+        const { roster = "FA25", courses = [] } = req.body;
+        
+        const scheduleData: Omit<Schedule, "id"> = {
+            userId,
+            roster,
+            courses,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        
+        const docRef = await db.collection("schedules").add(scheduleData);
+        const schedule: Schedule = {
+            id: docRef.id,
+            ...scheduleData,
+        };
+        
+        res.json({ schedule });
+    } catch (error) {
+        console.error("Create schedule error:", error);
+        res.status(500).json({ error: "Failed to create schedule" } as ApiError);
+    }
+});
+
+app.put("/api/schedules/:scheduleId/courses/:courseId", verifyAuth, async (req, res) => {
+    if (!db) {
+        res.status(503).json({ error: "Firebase not initialized" } as ApiError);
+        return;
+    }
+    
+    try {
+        const userId = (req as any).userId;
+        const { scheduleId, courseId } = req.params;
+        const { enrollGroupIndex, meetings } = req.body;
+        
+        // Verify schedule belongs to user
+        const scheduleDoc = await db.collection("schedules").doc(scheduleId).get();
+        if (!scheduleDoc.exists) {
+            res.status(404).json({ error: "Schedule not found" } as ApiError);
+            return;
+        }
+        
+        const schedule = scheduleDoc.data() as Schedule;
+        if (schedule.userId !== userId) {
+            res.status(403).json({ error: "Forbidden" } as ApiError);
+            return;
+        }
+        
+        // Update course
+        const courseIndex = schedule.courses.findIndex(c => c.id === courseId);
+        if (courseIndex === -1) {
+            res.status(404).json({ error: "Course not found" } as ApiError);
+            return;
+        }
+        
+        schedule.courses[courseIndex] = {
+            ...schedule.courses[courseIndex],
+            enrollGroupIndex: enrollGroupIndex ?? schedule.courses[courseIndex].enrollGroupIndex,
+            meetings: meetings ?? schedule.courses[courseIndex].meetings,
+        };
+        
+        await db.collection("schedules").doc(scheduleId).update({
+            courses: schedule.courses,
+            updatedAt: new Date().toISOString(),
+        });
+        
+        const updatedSchedule: Schedule = {
+            ...schedule,
+            id: scheduleId,
+        };
+        
+        res.json({ schedule: updatedSchedule });
+    } catch (error) {
+        console.error("Update course error:", error);
+        res.status(500).json({ error: "Failed to update course" } as ApiError);
+    }
+});
+
+app.delete("/api/schedules/:scheduleId/courses/:courseId", verifyAuth, async (req, res) => {
+    if (!db) {
+        res.status(503).json({ error: "Firebase not initialized" } as ApiError);
+        return;
+    }
+    
+    try {
+        const userId = (req as any).userId;
+        const { scheduleId, courseId } = req.params;
+        
+        // Verify schedule belongs to user
+        const scheduleDoc = await db.collection("schedules").doc(scheduleId).get();
+        if (!scheduleDoc.exists) {
+            res.status(404).json({ error: "Schedule not found" } as ApiError);
+            return;
+        }
+        
+        const schedule = scheduleDoc.data() as Schedule;
+        if (schedule.userId !== userId) {
+            res.status(403).json({ error: "Forbidden" } as ApiError);
+            return;
+        }
+        
+        // Remove course
+        const updatedCourses = schedule.courses.filter(c => c.id !== courseId);
+        
+        await db.collection("schedules").doc(scheduleId).update({
+            courses: updatedCourses,
+            updatedAt: new Date().toISOString(),
+        });
+        
+        const updatedSchedule: Schedule = {
+            ...schedule,
+            id: scheduleId,
+            courses: updatedCourses,
+        };
+        
+        res.json({ schedule: updatedSchedule });
+    } catch (error) {
+        console.error("Delete course error:", error);
+        res.status(500).json({ error: "Failed to delete course" } as ApiError);
+    }
+});
+
+// Legacy weather endpoint
 type WeatherData = {
     latitude: number;
     longitude: number;
