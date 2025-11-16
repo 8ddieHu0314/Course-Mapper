@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login – Course Mapper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f4f6;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 1.5rem 1.75rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      width: 100%;
+      max-width: 360px;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      margin-bottom: 0.25rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      font-size: 0.9rem;
+      color: #6b7280;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.4rem 0.5rem;
+      margin-bottom: 0.75rem;
+      border-radius: 0.4rem;
+      border: 1px solid #d1d5db;
+      font-size: 0.9rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: none;
+      border-radius: 0.4rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      color: #fff;
+      background: #2563eb;
+      margin-bottom: 0.5rem;
+    }
+
+    button.secondary {
+      background: #6b7280;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-size: 0.8rem;
+      min-height: 1rem;
+      margin-top: 0.25rem;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      color: #047857;
+      min-height: 1rem;
+      margin-top: 0.25rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .logged-in {
+      margin-top: 0.75rem;
+      padding: 0.6rem;
+      border-radius: 0.4rem;
+      background: #ecfdf5;
+      color: #065f46;
+      font-size: 0.85rem;
+    }
+
+    a.link {
+      font-size: 0.85rem;
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    a.link:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+  <!-- Firebase App (modular SDK) -->
+  <script type="module">
+    // 1. Import Firebase modules from CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+    // 2. Your Firebase config (from Firebase console)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      // other fields if you have them
+    };
+
+    // 3. Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 4. Grab DOM elements
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const errorDiv = document.getElementById("error");
+    const statusDiv = document.getElementById("status");
+    const loggedInBox = document.getElementById("loggedInBox");
+    const loggedInEmailSpan = document.getElementById("loggedInEmail");
+
+    function setLoading(isLoading) {
+      loginBtn.disabled = isLoading;
+      signupBtn.disabled = isLoading;
+      errorDiv.textContent = "";
+      if (isLoading) statusDiv.textContent = "Loading...";
+      else statusDiv.textContent = "";
+    }
+
+    // 5. Handle signup
+    signupBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      const pass = passwordInput.value;
+
+      if (!email || !pass) {
+        errorDiv.textContent = "Please enter email and password.";
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await createUserWithEmailAndPassword(auth, email, pass);
+        statusDiv.textContent = "Account created & logged in!";
+      } catch (err) {
+        errorDiv.textContent = err.message;
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // 6. Handle login
+    loginBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      const pass = passwordInput.value;
+
+      if (!email || !pass) {
+        errorDiv.textContent = "Please enter email and password.";
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        statusDiv.textContent = "Logged in!";
+      } catch (err) {
+        errorDiv.textContent = err.message;
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // 7. Handle logout
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    // 8. Listen to auth state changes
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loggedInBox.classList.remove("hidden");
+        loggedInEmailSpan.textContent = user.email || "";
+        logoutBtn.classList.remove("hidden");
+      } else {
+        loggedInBox.classList.add("hidden");
+        loggedInEmailSpan.textContent = "";
+        logoutBtn.classList.add("hidden");
+      }
+    });
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h1>Log in to Course Mapper</h1>
+    <p class="subtitle">Use your email and password.</p>
+
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="email" />
+
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
+
+    <button id="loginBtn">Log In</button>
+    <button id="signupBtn" class="secondary">Sign Up</button>
+
+    <div class="error" id="error"></div>
+    <div class="status" id="status"></div>
+
+    <div id="loggedInBox" class="logged-in hidden">
+      Logged in as <strong><span id="loggedInEmail"></span></strong>.
+      <button id="logoutBtn" style="margin-top: 0.5rem; width: 100%;">Log Out</button>
+    </div>
+
+    <p style="margin-top: 0.75rem; text-align: center;">
+      <a class="link" href="index.html">Go to Course Mapper</a>
+    </p>
+  </div>
+</body>
+</html>
