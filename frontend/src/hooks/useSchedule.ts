@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { Schedule, ScheduledCourse, CornellClass, EnrollGroup } from "@full-stack/types";
-import { api } from "../utils/api";
+import { Schedule, ScheduledCourse, CornellClass } from "@full-stack/types";
+import API from "../utils/api";
 import { useAuth } from "./useAuth";
 
-const ROSTER = "FA25";
+const ROSTER = "SP26";
 
 export const useSchedule = () => {
     const { idToken } = useAuth();
@@ -19,13 +19,13 @@ export const useSchedule = () => {
 
         try {
             setLoading(true);
-            const response = await api.getSchedules(ROSTER, idToken);
+            const response = await API.getSchedules(ROSTER, idToken);
             
             if (response.schedules.length > 0) {
                 setSchedule(response.schedules[0]);
             } else {
                 // Create new schedule
-                const newSchedule = await api.createSchedule(ROSTER, [], idToken);
+                const newSchedule = await API.createSchedule(ROSTER, [], idToken);
                 setSchedule(newSchedule.schedule);
             }
             setError(null);
@@ -41,37 +41,42 @@ export const useSchedule = () => {
         loadSchedule();
     }, [loadSchedule]);
 
-    const addCourse = useCallback(async (cornellClass: CornellClass, enrollGroupIndex: number) => {
+    const addCourse = useCallback(async (cornellClass: CornellClass, enrollGroupIndex: number, classSectionIndex: number = 0) => {
         if (!schedule || !idToken) return;
 
         const enrollGroup = cornellClass.enrollGroups[enrollGroupIndex];
+        const classSection = enrollGroup.classSections[classSectionIndex];
+        if (!classSection) {
+            throw new Error("Class section not found");
+        }
+
         const courseId = `${cornellClass.crseId}-${Date.now()}`;
 
         const scheduledCourse: ScheduledCourse = {
             id: courseId,
-            crseId: cornellClass.crseId,
+            crseId: cornellClass.crseId.toString(),
             subject: cornellClass.subject,
             catalogNbr: cornellClass.catalogNbr,
-            title: cornellClass.title,
-            classSection: enrollGroup.classSection,
-            ssrComponent: enrollGroup.ssrComponent,
-            classNbr: cornellClass.classNbr,
+            title: cornellClass.titleShort,
+            classSection: classSection.section,
+            ssrComponent: classSection.ssrComponent,
+            classNbr: classSection.classNbr.toString(),
             enrollGroupIndex,
-            meetings: enrollGroup.meetings.map(meeting => ({
+            meetings: classSection.meetings.map(meeting => ({
                 pattern: meeting.pattern,
                 timeStart: meeting.timeStart,
                 timeEnd: meeting.timeEnd,
-                bldgDescr: meeting.bldgDescr,
-                facilityDescr: meeting.facilityDescr,
+                bldgDescr: meeting.bldgDescr || "",
+                facilityDescr: meeting.facilityDescr || "",
                 instructors: meeting.instructors,
             })),
-            units: enrollGroup.units,
+            units: enrollGroup.unitsMinimum.toString(),
         };
 
         const updatedCourses = [...schedule.courses, scheduledCourse];
         
         try {
-            const updated = await api.createSchedule(ROSTER, updatedCourses, idToken);
+            const updated = await API.createSchedule(ROSTER, updatedCourses, idToken);
             setSchedule(updated.schedule);
         } catch (err) {
             console.error("Add course error:", err);
@@ -87,7 +92,7 @@ export const useSchedule = () => {
         if (!schedule || !idToken) return;
 
         try {
-            const updated = await api.updateCourse(
+            const updated = await API.updateCourse(
                 schedule.id,
                 courseId,
                 { enrollGroupIndex, meetings: newMeetings },
@@ -104,7 +109,7 @@ export const useSchedule = () => {
         if (!schedule || !idToken) return;
 
         try {
-            const updated = await api.deleteCourse(schedule.id, courseId, idToken);
+            const updated = await API.deleteCourse(schedule.id, courseId, idToken);
             setSchedule(updated.schedule);
         } catch (err) {
             console.error("Remove course error:", err);

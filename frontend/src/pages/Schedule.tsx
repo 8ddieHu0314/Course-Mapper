@@ -43,11 +43,16 @@ const SchedulePage = () => {
         if (!schedule) return;
 
         // Cache course data
-        setCourseDataCache((prev) => new Map(prev).set(cornellClass.crseId, cornellClass));
+        setCourseDataCache((prev) => new Map(prev).set(cornellClass.crseId.toString(), cornellClass));
 
-        // For now, select first enroll group (user can change later)
+        // For now, select first enroll group and first class section (user can change later)
         const enrollGroupIndex = 0;
         const enrollGroup = cornellClass.enrollGroups[enrollGroupIndex];
+        const classSection = enrollGroup.classSections[0];
+        if (!classSection) {
+            console.error("No class sections found");
+            return;
+        }
 
         // Check walking time for each day the course meets
         const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -66,7 +71,7 @@ const SchedulePage = () => {
                     ? "R"
                     : "F";
 
-            const meeting = enrollGroup.meetings.find((m) =>
+            const meeting = classSection.meetings.find((m) =>
                 m.pattern.includes(dayAbbr)
             );
             if (!meeting) continue;
@@ -101,23 +106,23 @@ const SchedulePage = () => {
             // Create temporary course object for checking
             const tempCourse: typeof schedule.courses[0] = {
                 id: "temp",
-                crseId: cornellClass.crseId,
+                crseId: cornellClass.crseId.toString(),
                 subject: cornellClass.subject,
                 catalogNbr: cornellClass.catalogNbr,
-                title: cornellClass.title,
-                classSection: enrollGroup.classSection,
-                ssrComponent: enrollGroup.ssrComponent,
-                classNbr: cornellClass.classNbr,
+                title: cornellClass.titleShort,
+                classSection: classSection.section,
+                ssrComponent: classSection.ssrComponent,
+                classNbr: classSection.classNbr.toString(),
                 enrollGroupIndex,
-                meetings: enrollGroup.meetings.map((m) => ({
+                meetings: classSection.meetings.map((m) => ({
                     pattern: m.pattern,
                     timeStart: m.timeStart,
                     timeEnd: m.timeEnd,
-                    bldgDescr: m.bldgDescr,
-                    facilityDescr: m.facilityDescr,
+                    bldgDescr: m.bldgDescr || "",
+                    facilityDescr: m.facilityDescr || "",
                     instructors: m.instructors,
                 })),
-                units: enrollGroup.units,
+                units: enrollGroup.unitsMinimum.toString(),
             };
 
             const check = await checkWalkingTime(
@@ -140,7 +145,7 @@ const SchedulePage = () => {
                 message: warningMessage,
                 onConfirm: async () => {
                     try {
-                        await addCourse(cornellClass, enrollGroupIndex);
+                        await addCourse(cornellClass, enrollGroupIndex, 0);
                         setWalkingWarning(null);
                     } catch (error) {
                         console.error("Failed to add course:", error);
@@ -152,7 +157,7 @@ const SchedulePage = () => {
             });
         } else {
             try {
-                await addCourse(cornellClass, enrollGroupIndex);
+                await addCourse(cornellClass, enrollGroupIndex, 0);
             } catch (error) {
                 console.error("Failed to add course:", error);
             }
@@ -184,7 +189,7 @@ const SchedulePage = () => {
     };
 
     const getCourseData = (course: ScheduledCourse): CornellClass | null => {
-        return courseDataCache.get(course.crseId) || null;
+        return courseDataCache.get(course.crseId.toString()) || null;
     };
 
     return (

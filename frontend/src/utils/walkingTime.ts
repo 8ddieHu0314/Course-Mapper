@@ -1,5 +1,5 @@
 import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
-import { api } from "./api";
+import API from "./api";
 
 export type TimeSlot = {
     hour: number;
@@ -73,7 +73,7 @@ export const checkWalkingTime = async (
                 // Get coordinates if not already cached
                 if (!currentMeeting.coordinates) {
                     try {
-                        const geocode = await api.geocode(
+                        const geocode = await API.geocode(
                             `${currentMeeting.bldgDescr}, Ithaca, NY`
                         );
                         currentMeeting.coordinates = { lat: geocode.lat, lng: geocode.lng };
@@ -85,7 +85,7 @@ export const checkWalkingTime = async (
 
                 if (!nextMeetings[0].coordinates) {
                     try {
-                        const geocode = await api.geocode(
+                        const geocode = await API.geocode(
                             `${nextMeetings[0].bldgDescr}, Ithaca, NY`
                         );
                         nextMeetings[0].coordinates = { lat: geocode.lat, lng: geocode.lng };
@@ -97,7 +97,7 @@ export const checkWalkingTime = async (
 
                 // Calculate walking time
                 try {
-                    const directions = await api.getDirections(
+                    const directions = await API.getDirections(
                         currentMeeting.coordinates!,
                         nextMeetings[0].coordinates!
                     );
@@ -133,7 +133,7 @@ export const checkWalkingTime = async (
                 // Similar check as above
                 if (!prevMeetings[0].coordinates) {
                     try {
-                        const geocode = await api.geocode(
+                        const geocode = await API.geocode(
                             `${prevMeetings[0].bldgDescr}, Ithaca, NY`
                         );
                         prevMeetings[0].coordinates = { lat: geocode.lat, lng: geocode.lng };
@@ -144,7 +144,7 @@ export const checkWalkingTime = async (
 
                 if (!currentMeeting.coordinates) {
                     try {
-                        const geocode = await api.geocode(
+                        const geocode = await API.geocode(
                             `${currentMeeting.bldgDescr}, Ithaca, NY`
                         );
                         currentMeeting.coordinates = { lat: geocode.lat, lng: geocode.lng };
@@ -154,7 +154,7 @@ export const checkWalkingTime = async (
                 }
 
                 try {
-                    const directions = await api.getDirections(
+                    const directions = await API.getDirections(
                         prevMeetings[0].coordinates!,
                         currentMeeting.coordinates!
                     );

@@ -1,6 +1,7 @@
 import { Button, Container, Title, Stack } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import "./Home.css";
 
 const HomePage = () => {
     const navigate = useNavigate();
@@ -27,13 +28,13 @@ const HomePage = () => {
     }
 
     return (
-        <Container size="sm" style={{ marginTop: "10rem" }}>
-            <Stack align="center" gap="xl">
+        <Container size="sm" className="home-container">
+            <Stack align="center" spacing="xl">
                 <Title order={1}>Cornell Class Scheduler</Title>
                 <Title order={3} c="dimmed">
                     Plan your semester schedule
                 </Title>
-                <Stack gap="md" style={{ width: "100%", maxWidth: "300px" }}>
+                <Stack spacing="md" className="button-stack">
                     <Button size="lg" fullWidth onClick={handleLogin}>
                         Login with Google
                     </Button>

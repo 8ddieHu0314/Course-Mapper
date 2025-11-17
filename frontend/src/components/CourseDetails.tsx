@@ -1,5 +1,5 @@
-import { Stack, Text, Button, Select, Paper, Group, ActionIcon } from "@mantine/core";
-import { ScheduledCourse, CornellClass, EnrollGroup } from "@full-stack/types";
+import { Stack, Text, Select, Paper, Group, ActionIcon } from "@mantine/core";
+import { ScheduledCourse, CornellClass, ClassSection } from "@full-stack/types";
 import { IconTrash } from "@tabler/icons-react";
 
 interface CourseDetailsProps {
@@ -22,14 +22,14 @@ export const CourseDetails = ({
     const handleSectionChange = (
         course: ScheduledCourse,
         enrollGroupIndex: number,
-        enrollGroup: EnrollGroup
+        classSection: ClassSection
     ) => {
-        const newMeetings = enrollGroup.meetings.map((meeting) => ({
+        const newMeetings = classSection.meetings.map((meeting) => ({
             pattern: meeting.pattern,
             timeStart: meeting.timeStart,
             timeEnd: meeting.timeEnd,
-            bldgDescr: meeting.bldgDescr,
-            facilityDescr: meeting.facilityDescr,
+            bldgDescr: meeting.bldgDescr || "",
+            facilityDescr: meeting.facilityDescr || "",
             instructors: meeting.instructors,
         }));
 
@@ -37,7 +37,7 @@ export const CourseDetails = ({
     };
 
     return (
-        <Stack gap="md" style={{ padding: "16px" }}>
+        <Stack spacing="md" style={{ padding: "16px" }}>
             <Text size="lg" fw={700}>
                 Selected Courses ({courses.length})
             </Text>
@@ -47,10 +47,22 @@ export const CourseDetails = ({
                 courses.map((course) => {
                     const cornellClass = getCourseData?.(course);
                     const enrollGroups = cornellClass?.enrollGroups || [];
+                    
+                    // Flatten all class sections from all enroll groups
+                    const allClassSections: Array<{ enrollGroupIndex: number; classSectionIndex: number; classSection: ClassSection }> = [];
+                    enrollGroups.forEach((eg, egIdx) => {
+                        eg.classSections.forEach((cs, csIdx) => {
+                            allClassSections.push({
+                                enrollGroupIndex: egIdx,
+                                classSectionIndex: csIdx,
+                                classSection: cs,
+                            });
+                        });
+                    });
 
                     return (
                         <Paper key={course.id} p="md" withBorder>
-                            <Group justify="space-between" mb="xs">
+                            <Group position="apart" mb="xs">
                                 <div>
                                     <Text fw={600}>
                                         {course.subject} {course.catalogNbr}
@@ -71,34 +83,58 @@ export const CourseDetails = ({
                                 </ActionIcon>
                             </Group>
 
-                            {enrollGroups.length > 1 && (
-                                <Select
-                                    label="Section"
-                                    value={course.enrollGroupIndex.toString()}
-                                    onChange={(value) => {
-                                        if (value) {
-                                            const index = parseInt(value);
-                                            const enrollGroup = enrollGroups[index];
-                                            if (enrollGroup) {
-                                                handleSectionChange(course, index, enrollGroup);
-                                            }
-                                        }
-                                    }}
-                                    data={enrollGroups.map((eg, idx) => ({
-                                        value: idx.toString(),
-                                        label: `${eg.ssrComponent} ${eg.classSection} - ${eg.meetings
-                                            .map(
-                                                (m) =>
-                                                    `${m.pattern} ${m.timeStart}-${m.timeEnd}`
-                                            )
-                                            .join(", ")}`,
-                                    }))}
-                                    size="sm"
-                                    mt="xs"
-                                />
-                            )}
+                            {allClassSections.length > 1 && (() => {
+                                // Find the current section index by matching classSection and ssrComponent
+                                const currentSectionIndex = allClassSections.findIndex(
+                                    (sectionData) =>
+                                        sectionData.enrollGroupIndex === course.enrollGroupIndex &&
+                                        sectionData.classSection.section === course.classSection &&
+                                        sectionData.classSection.ssrComponent === course.ssrComponent
+                                );
+                                const fallbackIndex = allClassSections.findIndex(
+                                    (sd) => sd.enrollGroupIndex === course.enrollGroupIndex
+                                );
+                                const selectedValue = (currentSectionIndex >= 0 
+                                    ? currentSectionIndex 
+                                    : fallbackIndex >= 0 ? fallbackIndex : 0).toString();
 
-                            <Stack gap="xs" mt="xs">
+                                return (
+                                    <Select
+                                        label="Section"
+                                        value={selectedValue}
+                                        onChange={(value) => {
+                                            if (value) {
+                                                const index = parseInt(value);
+                                                const sectionData = allClassSections[index];
+                                                if (sectionData) {
+                                                    handleSectionChange(
+                                                        course,
+                                                        sectionData.enrollGroupIndex,
+                                                        sectionData.classSection
+                                                    );
+                                                }
+                                            }
+                                        }}
+                                        data={allClassSections.map((sectionData, idx) => {
+                                            const { classSection } = sectionData;
+                                            const meetingsStr = classSection.meetings
+                                                .map(
+                                                    (m) =>
+                                                        `${m.pattern} ${m.timeStart}-${m.timeEnd}`
+                                                )
+                                                .join(", ");
+                                            return {
+                                                value: idx.toString(),
+                                                label: `${classSection.ssrComponent} ${classSection.section} - ${meetingsStr}`,
+                                            };
+                                        })}
+                                        size="sm"
+                                        mt="xs"
+                                    />
+                                );
+                            })()}
+
+                            <Stack spacing="xs" mt="xs">
                                 {course.meetings.map((meeting, idx) => (
                                     <Text key={idx} size="sm">
                                         {meeting.pattern} {meeting.timeStart} - {meeting.timeEnd}

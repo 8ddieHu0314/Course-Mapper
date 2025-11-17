@@ -1,9 +1,10 @@
-import { BACKEND_BASE_PATH } from "../constants/Navigation";
 import { CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, SchedulesResponse } from "@full-stack/types";
 
+// Define BACKEND_BASE_PATH here to avoid circular dependency with Navigation.tsx
+const BACKEND_BASE_PATH = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 const API_BASE = BACKEND_BASE_PATH.replace("/api", "");
 
-export const api = {
+const API = {
     async request<T>(
         endpoint: string,
         options: RequestInit = {},
@@ -15,7 +16,7 @@ export const api = {
         };
 
         if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
+            (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
         }
 
         const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -31,16 +32,29 @@ export const api = {
         return response.json();
     },
 
-    // Cornell API
-    async searchCourses(query: string, roster = "FA25"): Promise<CornellClassResponse> {
-        return this.request<CornellClassResponse>(
-            `/api/cornell/search?q=${encodeURIComponent(query)}&roster=${roster}`
-        );
+    // Cornell Course Roster API
+    async searchCourses(query: string, roster = "SP26"): Promise<CornellClassResponse> {
+        const params = new URLSearchParams({
+            roster,
+            "acadCareer[]": "UG",
+            subject: query,
+        });
+
+        const url = 'https://classes.cornell.edu/api/2.0/search/classes.json?' + params.toString();
+        
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: "Unknown error" }));
+            throw new Error(error.error || 'HTTP ${response.status}');
+        }
+
+        return response.json();
     },
 
     // Google Maps API
     async geocode(address: string): Promise<GeocodeResponse> {
-        return this.request<GeocodeResponse>("/api/geocode", {
+        return API.request<GeocodeResponse>("/api/geocode", {
             method: "POST",
             body: JSON.stringify({ address }),
         });
@@ -50,62 +64,74 @@ export const api = {
         origin: { lat: number; lng: number } | string,
         destination: { lat: number; lng: number } | string
     ): Promise<DirectionsResponse> {
-        return this.request<DirectionsResponse>("/api/directions", {
+        return API.request<DirectionsResponse>("/api/directions", {
             method: "POST",
             body: JSON.stringify({ origin, destination }),
         });
     },
 
-    // Schedule API
-    async getSchedules(roster = "FA25", token: string): Promise<SchedulesResponse> {
-        return this.request<SchedulesResponse>(
-            `/api/schedules?roster=${roster}`,
-            { method: "GET" },
-            token
-        );
-    },
-
-    async createSchedule(
+    // Placeholders
+    async getSchedules(roster = "SP26", token: string): Promise<SchedulesResponse> {
+        // Return a mock empty schedule list
+        return {
+          schedules: [], // mimic no schedules found
+        };
+      },
+    
+      async createSchedule(
         roster: string,
         courses: any[],
         token: string
-    ): Promise<{ schedule: Schedule }> {
-        return this.request<{ schedule: Schedule }>(
-            "/api/schedules",
-            {
-                method: "POST",
-                body: JSON.stringify({ roster, courses }),
-            },
-            token
-        );
-    },
+      ): Promise<{ schedule: Schedule }> {
 
-    async updateCourse(
+        return {
+          schedule: {
+            id: "",
+            userId: "",
+            roster: "SP26",
+            courses: [],
+            createdAt: "",
+            updatedAt: ""
+          },
+        };
+      },
+    
+      async updateCourse(
         scheduleId: string,
         courseId: string,
         updates: { enrollGroupIndex?: number; meetings?: any[] },
         token: string
-    ): Promise<{ schedule: Schedule }> {
-        return this.request<{ schedule: Schedule }>(
-            `/api/schedules/${scheduleId}/courses/${courseId}`,
-            {
-                method: "PUT",
-                body: JSON.stringify(updates),
-            },
-            token
-        );
-    },
+      ): Promise<{ schedule: Schedule }> {
 
-    async deleteCourse(
+        return {
+          schedule: {
+            id: "",
+            userId: "",
+            roster: "SP26",
+            courses: [],
+            createdAt: "",
+            updatedAt: ""
+          },
+        };
+      },
+    
+      async deleteCourse(
         scheduleId: string,
         courseId: string,
         token: string
-    ): Promise<{ schedule: Schedule }> {
-        return this.request<{ schedule: Schedule }>(
-            `/api/schedules/${scheduleId}/courses/${courseId}`,
-            { method: "DELETE" },
-            token
-        );
-    },
+      ): Promise<{ schedule: Schedule }> {
+
+        return {
+          schedule: {
+            id: "",
+            userId: "",
+            roster: "SP26",
+            courses: [],
+            createdAt: "",
+            updatedAt: ""
+          },
+        };
+      },
 };
 
+export default API;

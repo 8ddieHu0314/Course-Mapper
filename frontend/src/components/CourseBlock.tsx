@@ -1,4 +1,4 @@
-import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
+import { ScheduledCourse } from "@full-stack/types";
 import { getMeetingsForDay, parseTime, timeToMinutes } from "../utils/walkingTime";
 
 interface CourseBlockProps {

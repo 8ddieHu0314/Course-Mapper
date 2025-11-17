@@ -1,6 +1,5 @@
 import HomePage from "../pages/Home";
 import SchedulePage from "../pages/Schedule";
-import DayViewPage from "../pages/DayView";
 import { Link } from "react-router-dom";
 
 export const BACKEND_BASE_PATH = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';

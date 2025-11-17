@@ -16,51 +16,45 @@ export type CornellClassResponse = {
 };
 
 export type CornellClass = {
-    crseId: string;
-    strm: string;
-    classSection: string;
-    ssrComponent: string;
-    classNbr: string;
+    strm: number;
+    crseId: number;
+    crseOfferNbr: number;
     subject: string;
     catalogNbr: string;
-    title: string;
-    descr: string;
+    titleShort: string;
+    titleLong: string;
+    crseAttrs: CourseAttribute[];
+    crseAttrValueGroups: CourseAttributeValueGroup[];
     enrollGroups: EnrollGroup[];
-    catalogBreadth?: string;
-    catalogDistr?: string;
-    catalogWhenOffered?: string;
-    catalogPrereqCoreq?: string;
+    description: string;
+    catalogBreadth?: string | null;
+    catalogDistr?: string | null;
+    catalogEnrollmentPriority?: string;
+    catalogLang?: string | null;
+    catalogForbiddenOverlaps?: string | null;
+    catalogAttribute?: string | null;
+    catalogWhenOffered?: string | null;
+    catalogComments?: string | null;
+    catalogPrereqCoreq?: string | null;
     catalogPrereq?: string;
     catalogCoreq?: string;
-    catalogPermission?: string;
-    catalogEnrollmentPriority?: string;
-    crseAttrs: CourseAttribute[];
+    catalogPermission?: string | null;
+    catalogFee?: string | null;
+    catalogSatisfiesReq?: string | null;
+    catalogCourseSubfield?: string | null;
+    catalogOutcomes?: string[];
+    acadCareer: string;
+    acadGroup: string;
+    catalogName?: string | null;
+    catalogNextOffered?: string | null;
     lastTermsOffered?: string;
-};
-
-export type EnrollGroup = {
-    classSection: string;
-    ssrComponent: string;
-    units: string;
-    meetings: Meeting[];
-    enrollmentReq?: string;
-    enrollmentReqDescr?: string;
-    enrollmentReqDescrlong?: string;
-};
-
-export type Meeting = {
-    pattern: string;
-    timeStart: string;
-    timeEnd: string;
-    bldgDescr: string;
-    facilityDescr: string;
-    instructors: Instructor[];
-};
-
-export type Instructor = {
-    firstName: string;
-    lastName: string;
-    netid?: string;
+    catalogCredits?: string | null;
+    catalogGradeOption?: string | null;
+    catalogLocation?: string | null;
+    catalogCrosslisted?: string | null;
+    catalogCrosslistings?: string | null;
+    catalogComeets?: string | null;
+    exploreCriteriaIds?: any[];
 };
 
 export type CourseAttribute = {
@@ -72,11 +66,85 @@ export type CourseAttribute = {
     attrDescrShort: string;
 };
 
+export type CourseAttributeValueGroup = {
+    attrDescr: string;
+    crseAttrValues: string;
+};
+
+export type EnrollGroup = {
+    classSections: ClassSection[];
+    unitsMinimum: number;
+    unitsMaximum: number;
+    componentsOptional: string[];
+    componentsRequired: string[];
+    gradingBasis: string;
+    gradingBasisShort: string;
+    gradingBasisLong: string;
+    simpleCombinations: any[];
+    sessionCode: string;
+    sessionBeginDt: string;
+    sessionEndDt: string;
+    sessionLong: string;
+    exploreCriteriaIds?: any[];
+};
+
+export type ClassSection = {
+    ssrComponent: string;
+    ssrComponentLong: string;
+    section: string;
+    classNbr: number;
+    meetings: Meeting[];
+    notes?: ClassNote[];
+    campus: string;
+    campusDescr: string;
+    location: string;
+    locationDescr: string;
+    startDt: string;
+    endDt: string;
+    addConsent: string;
+    addConsentDescr: string;
+    isComponentGraded: boolean;
+    crseAttrs?: CourseAttribute[];
+    instructionMode: string;
+    instrModeDescrshort: string;
+    instrModeDescr: string;
+    topicDescription?: string;
+    openStatus: string;
+    exploreCriteriaIds?: any[];
+    materials?: any[];
+};
+
+export type Meeting = {
+    classMtgNbr: number;
+    timeStart: string;
+    timeEnd: string;
+    startDt: string;
+    endDt: string;
+    instructors: Instructor[];
+    pattern: string;
+    meetingTopicDescription?: string;
+    bldgDescr?: string;
+    facilityDescr?: string;
+};
+
+export type ClassNote = {
+    classNotesSeq: number;
+    descrlong: string;
+};
+
+export type Instructor = {
+    instrAssignSeq: number;
+    netid?: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+};
+
 // Schedule Types
 export type Schedule = {
     id: string;
     userId: string;
-    roster: string; // e.g., "FA25"
+    roster: string;
     courses: ScheduledCourse[];
     createdAt: string;
     updatedAt: string;
@@ -97,11 +165,11 @@ export type ScheduledCourse = {
 };
 
 export type ScheduledMeeting = {
-    pattern: string; // e.g., "MWF", "TR"
-    timeStart: string; // e.g., "10:10"
-    timeEnd: string; // e.g., "11:25"
-    bldgDescr: string; // e.g., "Phillips Hall"
-    facilityDescr: string; // e.g., "101"
+    pattern: string;
+    timeStart: string;
+    timeEnd: string;
+    bldgDescr: string;
+    facilityDescr: string;
     instructors: Instructor[];
     coordinates?: {
         lat: number;

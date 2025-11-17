@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Autocomplete, Loader } from "@mantine/core";
+import { Autocomplete, Loader, AutocompleteItem } from "@mantine/core";
 import { CornellClass } from "@full-stack/types";
-import { api } from "../utils/api";
+import API from "../utils/api";
 
 interface CourseSearchProps {
     onSelect: (course: CornellClass) => void;
@@ -22,12 +22,12 @@ export const CourseSearch = ({ onSelect }: CourseSearchProps) => {
         const searchTimeout = setTimeout(async () => {
             setLoading(true);
             try {
-                const response = await api.searchCourses(value);
+                const response = await API.searchCourses(value);
                 const foundCourses = response.data?.classes || [];
                 setCourses(foundCourses);
                 setData(
                     foundCourses.map(
-                        (c) => `${c.subject} ${c.catalogNbr} - ${c.title}`
+                        (c) => `${c.subject} ${c.catalogNbr} - ${c.titleShort}`
                     )
                 );
             } catch (error) {
@@ -41,9 +41,10 @@ export const CourseSearch = ({ onSelect }: CourseSearchProps) => {
         return () => clearTimeout(searchTimeout);
     }, [value]);
 
-    const handleItemSubmit = (item: string) => {
+    const handleItemSubmit = (item: AutocompleteItem) => {
+        const itemValue = typeof item === "string" ? item : item.value;
         const selectedCourse = courses.find(
-            (c) => `${c.subject} ${c.catalogNbr} - ${c.title}` === item
+            (c) => `${c.subject} ${c.catalogNbr} - ${c.titleShort}` === itemValue
         );
         if (selectedCourse) {
             onSelect(selectedCourse);

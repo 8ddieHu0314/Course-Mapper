@@ -63,7 +63,7 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
 // Cornell API Proxy Endpoints
 app.get("/api/cornell/search", rateLimitCornell, async (req, res) => {
     try {
-        const { q, roster = "FA25", subject } = req.query;
+        const { q, roster = "SP26", subject } = req.query;
         
         if (!q && !subject) {
             res.status(400).json({ error: "Either 'q' or 'subject' parameter is required" } as ApiError);
@@ -88,7 +88,7 @@ app.get("/api/cornell/search", rateLimitCornell, async (req, res) => {
 
 app.get("/api/cornell/subjects", rateLimitCornell, async (req, res) => {
     try {
-        const { roster = "FA25" } = req.query;
+        const { roster = "SP26" } = req.query;
         const url = `https://classes.cornell.edu/api/2.0/config/subjects.json?roster=${roster}`;
         const response = await fetch(url);
         const data = await response.json();
@@ -214,7 +214,7 @@ app.get("/api/schedules", verifyAuth, async (req, res) => {
     
     try {
         const userId = (req as any).userId;
-        const { roster = "FA25" } = req.query;
+        const { roster = "SP26" } = req.query;
         
         const schedulesSnapshot = await db
             .collection("schedules")
@@ -242,7 +242,7 @@ app.post("/api/schedules", verifyAuth, async (req, res) => {
     
     try {
         const userId = (req as any).userId;
-        const { roster = "FA25", courses = [] } = req.body;
+        const { roster = "SP26", courses = [] } = req.body;
         
         const scheduleData: Omit<Schedule, "id"> = {
             userId,
