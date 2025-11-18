@@ -1,24 +1,8 @@
-# Cornell Class Scheduler
+# Cornell Course Mapper
 
-A React + Node.js application for planning your Cornell semester schedule with timetable visualization, walking distance validation, and interactive map views.
-
-## Features
-
-- **Weekly Timetable View**: Visualize your schedule Monday through Friday (7am-9pm)
-- **Course Search**: Autocomplete search using Cornell Class Roster API
-- **Walking Distance Validation**: Alerts when there's insufficient time to walk between classes
-- **Day-Specific Map View**: Click any day to see your schedule with a map showing walking paths
-- **Google Authentication**: Sign in with Google to save your schedule
-- **Section Selection**: Change course sections (e.g., LEC001 to LEC002) with PUT requests
-- **Course Management**: Add and remove courses with automatic Firebase persistence
+A React + Node.js application for Cornell Course Planning
 
 ## Setup
-
-### Prerequisites
-
-- Node.js and pnpm installed
-- Firebase project with Authentication and Firestore enabled
-- Google Maps API key with Geocoding, Directions, and Maps JavaScript API enabled
 
 ### Backend Setup
 
@@ -65,43 +49,3 @@ A React + Node.js application for planning your Cornell semester schedule with t
    pnpm install
    pnpm dev
    ```
-
-### Firebase Configuration
-
-1. Enable Google Authentication in Firebase Console
-2. Create a Firestore database
-3. Create a service account and download the private key for backend authentication
-4. Add your Firebase web app configuration to frontend `.env`
-
-## API Endpoints
-
-### Cornell API Proxy
-- `GET /api/cornell/search?q=<courseCode>&roster=FA25` - Search for courses
-- `GET /api/cornell/subjects?roster=FA25` - Get available subjects
-
-### Google Maps API Proxy
-- `POST /api/geocode` - Convert building name to coordinates
-- `POST /api/directions` - Calculate walking time between locations
-
-### Schedule Management (Protected)
-- `GET /api/schedules?roster=FA25` - Get user's schedules
-- `POST /api/schedules` - Create new schedule
-- `PUT /api/schedules/:scheduleId/courses/:courseId` - Update course section
-- `DELETE /api/schedules/:scheduleId/courses/:courseId` - Delete course
-
-## Usage
-
-1. Start the backend server (port 8080)
-2. Start the frontend dev server
-3. Navigate to the home page and sign in with Google
-4. Search for courses and add them to your schedule
-5. Click on day headers (Mon-Fri) to view day-specific maps
-6. Change sections in the course details sidebar
-7. Remove courses using the delete button
-
-## Technology Stack
-
-- **Frontend**: React, TypeScript, Mantine UI, React Router, Firebase Auth
-- **Backend**: Node.js, Express, TypeScript, Firebase Admin SDK
-- **APIs**: Cornell Class Roster API, Google Maps API
-- **Database**: Firebase Firestore
