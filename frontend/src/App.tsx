@@ -5,6 +5,7 @@ import RootLayout from "./layouts/RootLayout";
 import HomePage from "./pages/Home";
 import SchedulePage from "./pages/Schedule";
 import DayViewPage from "./pages/DayView";
+import MapViewPage from "./pages/MapView";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
             {
                 path: "/schedule/:day",
                 element: <DayViewPage />,
+            },
+            {
+                path: "/map-view",
+                element: <MapViewPage />,
             },
         ],
     },

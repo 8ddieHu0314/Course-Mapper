@@ -1,5 +1,6 @@
 import HomePage from "../pages/Home";
 import SchedulePage from "../pages/Schedule";
+import MapViewPage from "../pages/MapView";
 import { Link } from "react-router-dom";
 
 export const BACKEND_BASE_PATH = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -18,6 +19,11 @@ export const PATHS: {
         link: "/schedule",
         label: "Schedule",
         element: <SchedulePage />,
+    },
+    {
+        link: "/map-view",
+        label: "Map View",
+        element: <MapViewPage />,
     },
 ];
 
