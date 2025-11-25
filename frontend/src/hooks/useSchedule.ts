@@ -22,7 +22,13 @@ export const useSchedule = () => {
             const response = await API.getSchedules(ROSTER, idToken);
             
             if (response.schedules.length > 0) {
-                setSchedule(response.schedules[0]);
+                const loadedSchedule = response.schedules[0];
+                console.log("[loadSchedule] Loaded schedule courses:", loadedSchedule.courses);
+                const math2940 = loadedSchedule.courses.find(c => c.subject === "MATH" && c.catalogNbr === "2940");
+                if (math2940) {
+                    console.log("[loadSchedule] MATH 2940 from API:", math2940);
+                }
+                setSchedule(loadedSchedule);
             } else {
                 // Create new schedule
                 const newSchedule = await API.createSchedule(ROSTER, [], idToken);
@@ -52,6 +58,22 @@ export const useSchedule = () => {
 
         const courseId = `${cornellClass.crseId}-${Date.now()}`;
 
+        // Initialize selectedSections with the primary lecture section
+        const primarySection: ScheduledCourse["selectedSections"][0] = {
+            enrollGroupIndex,
+            classSectionIndex,
+            section: classSection.section,
+            ssrComponent: classSection.ssrComponent,
+            meetings: classSection.meetings.map(meeting => ({
+                pattern: meeting.pattern,
+                timeStart: meeting.timeStart,
+                timeEnd: meeting.timeEnd,
+                bldgDescr: meeting.bldgDescr || "",
+                facilityDescr: meeting.facilityDescr || "",
+                instructors: meeting.instructors,
+            })),
+        };
+
         const scheduledCourse: ScheduledCourse = {
             id: courseId,
             crseId: cornellClass.crseId.toString(),
@@ -71,6 +93,7 @@ export const useSchedule = () => {
                 instructors: meeting.instructors,
             })),
             units: enrollGroup.unitsMinimum.toString(),
+            selectedSections: [primarySection],
         };
 
         const updatedCourses = [...schedule.courses, scheduledCourse];
@@ -95,8 +118,7 @@ export const useSchedule = () => {
             const updated = await API.updateCourse(
                 schedule.id,
                 courseId,
-                { enrollGroupIndex, meetings: newMeetings },
-                idToken
+                { enrollGroupIndex, meetings: newMeetings }
             );
             setSchedule(updated.schedule);
         } catch (err) {
@@ -109,10 +131,40 @@ export const useSchedule = () => {
         if (!schedule || !idToken) return;
 
         try {
-            const updated = await API.deleteCourse(schedule.id, courseId, idToken);
+            const updated = await API.deleteCourse(schedule.id, courseId);
             setSchedule(updated.schedule);
         } catch (err) {
             console.error("Remove course error:", err);
+            throw err;
+        }
+    }, [schedule, idToken]);
+
+    const updateSelectedSections = useCallback(async (
+        courseId: string,
+        selectedSections: ScheduledCourse["selectedSections"]
+    ) => {
+        if (!schedule || !idToken) return;
+
+        try {
+            const updatedCourses = schedule.courses.map(course => {
+                if (course.id === courseId) {
+                    const updatedCourse = { 
+                        ...course, 
+                        selectedSections,
+                        // Always use the first section (primary lecture) for course.meetings and course details
+                        meetings: selectedSections && selectedSections.length > 0 ? selectedSections[0].meetings : course.meetings,
+                        classSection: selectedSections && selectedSections.length > 0 ? selectedSections[0].section : course.classSection,
+                        ssrComponent: selectedSections && selectedSections.length > 0 ? selectedSections[0].ssrComponent : course.ssrComponent,
+                    };
+                    return updatedCourse;
+                }
+                return course;
+            });
+            
+            const updated = await API.createSchedule(ROSTER, updatedCourses, idToken);
+            setSchedule(updated.schedule);
+        } catch (err) {
+            console.error("Update selected sections error:", err);
             throw err;
         }
     }, [schedule, idToken]);
@@ -123,6 +175,7 @@ export const useSchedule = () => {
         error,
         addCourse,
         updateCourseSection,
+        updateSelectedSections,
         removeCourse,
         refreshSchedule: loadSchedule,
     };

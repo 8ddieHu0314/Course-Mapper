@@ -1,11 +1,11 @@
-import { Button, Container, Title, Stack } from "@mantine/core";
+import { Button, Container, Title, Stack, Loader, Center } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import "./Home.css";
 
 const HomePage = () => {
     const navigate = useNavigate();
-    const { loginWithGoogle, user } = useAuth();
+    const { loginWithGoogle, user, loading } = useAuth();
 
     const handleLogin = async () => {
         try {
@@ -25,6 +25,15 @@ const HomePage = () => {
     if (user) {
         navigate("/schedule");
         return null;
+    }
+
+    // Show loading while checking auth state
+    if (loading) {
+        return (
+            <Center style={{ height: "100vh" }}>
+                <Loader />
+            </Center>
+        );
     }
 
     return (
