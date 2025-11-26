@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Paper } from "@mantine/core";
-import { GoogleMap, LoadScript, Polyline, Marker, InfoWindow } from "@react-google-maps/api";
+import { Paper, Loader, Center, Text } from "@mantine/core";
+import { GoogleMap, useJsApiLoader, Polyline, Marker, InfoWindow } from "@react-google-maps/api";
 import { DayOfTheWeek } from "../utils/calendar-utils";
 import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
 
@@ -37,6 +37,10 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
         toCourse: string;
     }>>([]);
     const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
+    
+    const { isLoaded, loadError } = useJsApiLoader({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    });
 
     const getDayAbbr = (): string => {
         switch (day) {
@@ -114,7 +118,18 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
             </div>
 
             <div style={{ flex: 1, borderRadius: "8px", overflow: "hidden" }}>
-                <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "YOUR_API_KEY_HERE"}>
+                {loadError && (
+                    <Center style={{ height: "100%", flexDirection: "column" }}>
+                        <Text color="red" size="sm">Failed to load Google Maps</Text>
+                        <Text color="dimmed" size="xs">Check your API key configuration</Text>
+                    </Center>
+                )}
+                {!isLoaded && !loadError && (
+                    <Center style={{ height: "100%" }}>
+                        <Loader size="lg" />
+                    </Center>
+                )}
+                {isLoaded && (
                     <GoogleMap
                         mapContainerStyle={{ width: "100%", height: "100%" }}
                         center={{ lat: 42.4534, lng: -76.4735 }}
@@ -178,7 +193,7 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                             );
                         })}
                     </GoogleMap>
-                </LoadScript>
+                )}
             </div>
 
             {/* Route List */}

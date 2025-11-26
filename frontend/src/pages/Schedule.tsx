@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Grid, Paper, Button, Modal, Text, Stack } from "@mantine/core";
+import { Container, Grid, Paper, Button, Modal, Text, Stack, Tabs } from "@mantine/core";
+import { IconList, IconMap } from "@tabler/icons-react";
 import { useAuth } from "../hooks/useAuth";
 import { useSchedule } from "../hooks/useSchedule";
 import { CourseSearch } from "../components/CourseSearch";
 import { Timetable } from "../components/Timetable";
 import { CourseDetails } from "../components/CourseDetails";
+import { CourseMapPanel } from "../components/CourseMapPanel";
 import { CornellClass, ScheduledCourse } from "@full-stack/types";
 import { checkWalkingTime, getCoursesForDay } from "../utils/walkingTime";
 
@@ -223,14 +225,31 @@ const SchedulePage = () => {
                         </Paper>
                     </Grid.Col>
                     <Grid.Col span={4}>
-                        <Paper withBorder style={{ maxHeight: "80vh", overflowY: "auto" }}>
-                            <CourseDetails
-                                courses={schedule?.courses || []}
-                                onRemoveCourse={handleRemoveCourse}
-                                onUpdateSection={handleUpdateSection}
-                                onUpdateSelectedSections={handleUpdateSelectedSections}
-                                getCourseData={getCourseData}
-                            />
+                        <Paper withBorder style={{ height: "80vh", display: "flex", flexDirection: "column" }}>
+                            <Tabs defaultValue="details" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                                <Tabs.List>
+                                    <Tabs.Tab value="details" icon={<IconList size={14} />}>
+                                        Course Details
+                                    </Tabs.Tab>
+                                    <Tabs.Tab value="map" icon={<IconMap size={14} />}>
+                                        Map
+                                    </Tabs.Tab>
+                                </Tabs.List>
+
+                                <Tabs.Panel value="details" style={{ flex: 1, overflowY: "auto" }}>
+                                    <CourseDetails
+                                        courses={schedule?.courses || []}
+                                        onRemoveCourse={handleRemoveCourse}
+                                        onUpdateSection={handleUpdateSection}
+                                        onUpdateSelectedSections={handleUpdateSelectedSections}
+                                        getCourseData={getCourseData}
+                                    />
+                                </Tabs.Panel>
+
+                                <Tabs.Panel value="map" style={{ flex: 1, overflow: "hidden" }}>
+                                    <CourseMapPanel courses={schedule?.courses || []} />
+                                </Tabs.Panel>
+                            </Tabs>
                         </Paper>
                     </Grid.Col>
                 </Grid>

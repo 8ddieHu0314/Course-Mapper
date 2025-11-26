@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Schedule, ScheduledCourse, ScheduledCourseSection, CornellClass } from "@full-stack/types";
 import API from "../utils/api";
 import { useAuth } from "./useAuth";
+import { geocodeCourseMeetings, geocodeScheduleCourses } from "../utils/geocoding";
 
 const ROSTER = "SP26";
 
@@ -10,6 +11,7 @@ export const useSchedule = () => {
     const [schedule, setSchedule] = useState<Schedule | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const geocodingInProgress = useRef(false);
 
     const loadSchedule = useCallback(async () => {
         if (!idToken) {
@@ -17,12 +19,19 @@ export const useSchedule = () => {
             return;
         }
 
+        if (geocodingInProgress.current) return;
+
         try {
             setLoading(true);
             const response = await API.getSchedules(ROSTER, idToken);
             
             if (response.schedules.length > 0) {
-                setSchedule(response.schedules[0]);
+                const loadedSchedule = response.schedules[0];
+                // Geocode courses that don't have coordinates yet
+                geocodingInProgress.current = true;
+                const geocodedCourses = await geocodeScheduleCourses(loadedSchedule.courses);
+                geocodingInProgress.current = false;
+                setSchedule({ ...loadedSchedule, courses: geocodedCourses });
             } else {
                 // Create new schedule
                 const newSchedule = await API.createSchedule(ROSTER, [], idToken);
@@ -30,6 +39,7 @@ export const useSchedule = () => {
             }
             setError(null);
         } catch (err) {
+            geocodingInProgress.current = false;
             setError(err instanceof Error ? err.message : "Failed to load schedule");
             console.error("Load schedule error:", err);
         } finally {
@@ -90,7 +100,10 @@ export const useSchedule = () => {
             selectedSections: [primarySection],
         };
 
-        const updatedCourses = [...schedule.courses, scheduledCourse];
+        // Geocode the new course's meetings
+        const geocodedCourse = await geocodeCourseMeetings(scheduledCourse);
+
+        const updatedCourses = [...schedule.courses, geocodedCourse];
         
         try {
             const updated = await API.createSchedule(ROSTER, updatedCourses, idToken);
@@ -140,19 +153,28 @@ export const useSchedule = () => {
         if (!schedule || !idToken) return;
 
         try {
-            const updatedCourses = schedule.courses.map(course => {
-                if (course.id === courseId) {
+            // Geocode the sections as a temporary course object
+            const tempCourse: ScheduledCourse = {
+                ...schedule.courses.find(c => c.id === courseId)!,
+                selectedSections,
+                meetings: selectedSections?.[0]?.meetings || [],
+            };
+            const geocodedTemp = await geocodeCourseMeetings(tempCourse);
+            const geocodedSections = geocodedTemp.selectedSections;
+
+            const updatedCourses = schedule.courses.map(c => {
+                if (c.id === courseId) {
                     const updatedCourse = { 
-                        ...course, 
-                        selectedSections,
+                        ...c, 
+                        selectedSections: geocodedSections,
                         // Always use the first section (primary lecture) for course.meetings and course details
-                        meetings: selectedSections && selectedSections.length > 0 ? selectedSections[0].meetings : course.meetings,
-                        classSection: selectedSections && selectedSections.length > 0 ? selectedSections[0].section : course.classSection,
-                        ssrComponent: selectedSections && selectedSections.length > 0 ? selectedSections[0].ssrComponent : course.ssrComponent,
+                        meetings: geocodedSections && geocodedSections.length > 0 ? geocodedSections[0].meetings : c.meetings,
+                        classSection: geocodedSections && geocodedSections.length > 0 ? geocodedSections[0].section : c.classSection,
+                        ssrComponent: geocodedSections && geocodedSections.length > 0 ? geocodedSections[0].ssrComponent : c.ssrComponent,
                     };
                     return updatedCourse;
                 }
-                return course;
+                return c;
             });
             
             const updated = await API.createSchedule(ROSTER, updatedCourses, idToken);

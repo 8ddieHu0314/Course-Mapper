@@ -78,7 +78,6 @@ const API = {
 
     // Schedule Management with localStorage for client-side persistence
     async getSchedules(roster = "SP26", token: string): Promise<SchedulesResponse> {
-        // Note: token parameter kept for API compatibility
         void token;
         try {
             const stored = localStorage.getItem(`schedules_${roster}`);
