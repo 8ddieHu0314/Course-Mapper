@@ -162,6 +162,16 @@ export type ScheduledCourse = {
     enrollGroupIndex: number;
     meetings: ScheduledMeeting[];
     units: string;
+    // Support for multiple sections (lecture + discussion/recitation/project)
+    selectedSections?: ScheduledCourseSection[];
+};
+
+export type ScheduledCourseSection = {
+    enrollGroupIndex: number;
+    classSectionIndex: number;
+    section: string;
+    ssrComponent: string;
+    meetings: ScheduledMeeting[];
 };
 
 export type ScheduledMeeting = {
@@ -212,3 +222,29 @@ export type ScheduleResponse = {
 export type SchedulesResponse = {
     schedules: Schedule[];
 };
+
+// Course Search Types
+export type CourseSearchResult = {
+    courseId: number;
+    requirementName: string;
+    requirementDescription: string;
+    college: string;
+    university: string;
+};
+
+export type CourseRequirement = {
+    name: string;
+    description: string;
+    courses: number[];
+    college?: string;
+};
+
+export type CourseSearchResponse = {
+    results: CourseSearchResult[];
+    count: number;
+};
+
+export type RequirementsResponse = {
+    requirements: string[];
+};
+

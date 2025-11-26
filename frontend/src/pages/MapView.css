@@ -1,0 +1,82 @@
+.map-view-container {
+    padding: 1rem;
+}
+
+.map-view-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.map-view-right {
+    display: flex;
+    flex-direction: column;
+}
+
+.courses-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.course-card {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.course-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.course-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.course-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+}
+
+.course-time {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.course-location {
+    font-size: 0.8rem;
+    color: #007bff;
+}
+
+.course-instructor {
+    font-size: 0.8rem;
+    color: #555;
+}
+
+.no-courses {
+    text-align: center;
+    color: #999;
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Scrollbar styling */
+.courses-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.courses-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.courses-list::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.courses-list::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+}

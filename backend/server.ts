@@ -2,10 +2,11 @@ import "dotenv/config";
 import path from "path";
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
-import { WeatherResponse, CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, ScheduledCourse, ApiError } from "@full-stack/types";
+import { WeatherResponse, CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, ScheduledCourse, ApiError, CourseSearchResponse, RequirementsResponse } from "@full-stack/types";
 import fetch from "node-fetch";
 import { Client, TravelMode } from "@googlemaps/google-maps-services-js";
 import { db, auth } from "./firebase";
+import { courseDataService } from "./services/courseDataService";
 
 const app: Express = express();
 
@@ -363,6 +364,98 @@ app.delete("/api/schedules/:scheduleId/courses/:courseId", verifyAuth, async (re
     }
 });
 
+// Course Search API Endpoints
+app.get("/api/courses/search/by-id", async (req, res) => {
+    try {
+        const { courseId } = req.query;
+        
+        if (!courseId) {
+            res.status(400).json({ error: "courseId parameter is required" } as ApiError);
+            return;
+        }
+        
+        const id = parseInt(courseId as string);
+        if (isNaN(id)) {
+            res.status(400).json({ error: "courseId must be a number" } as ApiError);
+            return;
+        }
+        
+        const results = courseDataService.searchById(id);
+        const response: CourseSearchResponse = {
+            results,
+            count: results.length,
+        };
+        
+        res.json(response);
+    } catch (error) {
+        console.error("Course search error:", error);
+        res.status(500).json({ error: "Failed to search courses" } as ApiError);
+    }
+});
+
+app.get("/api/courses/search/requirements", async (req, res) => {
+    try {
+        const { q } = req.query;
+        
+        if (!q) {
+            res.status(400).json({ error: "q parameter is required" } as ApiError);
+            return;
+        }
+        
+        const requirements = courseDataService.searchRequirements(q as string);
+        
+        res.json({
+            results: requirements,
+            count: requirements.length,
+        });
+    } catch (error) {
+        console.error("Requirement search error:", error);
+        res.status(500).json({ error: "Failed to search requirements" } as ApiError);
+    }
+});
+
+app.get("/api/courses/search/by-requirement", async (req, res) => {
+    try {
+        const { requirementName } = req.query;
+        
+        if (!requirementName) {
+            res.status(400).json({ error: "requirementName parameter is required" } as ApiError);
+            return;
+        }
+        
+        const courses = courseDataService.getCoursesByRequirement(requirementName as string);
+        const response: CourseSearchResponse = {
+            results: courses.map(courseId => ({
+                courseId,
+                requirementName: requirementName as string,
+                requirementDescription: "",
+                college: "",
+                university: "",
+            })),
+            count: courses.length,
+        };
+        
+        res.json(response);
+    } catch (error) {
+        console.error("Course by requirement search error:", error);
+        res.status(500).json({ error: "Failed to search courses" } as ApiError);
+    }
+});
+
+app.get("/api/courses/requirements", async (req, res) => {
+    try {
+        const requirements = courseDataService.getAllRequirements();
+        const response: RequirementsResponse = {
+            requirements,
+        };
+        
+        res.json(response);
+    } catch (error) {
+        console.error("Get requirements error:", error);
+        res.status(500).json({ error: "Failed to fetch requirements" } as ApiError);
+    }
+});
+
 // Legacy weather endpoint
 type WeatherData = {
     latitude: number;
@@ -393,6 +486,14 @@ app.get("/weather", async (req, res) => {
     }
 });
 
-app.listen(port, hostname, () => {
+app.listen(port, hostname, async () => {
+    try {
+        // Initialize course data service
+        await courseDataService.initialize();
+        const stats = courseDataService.getStats();
+        console.log("Course data stats:", stats);
+    } catch (error) {
+        console.error("Failed to initialize course data:", error);
+    }
     console.log("Listening");
 });

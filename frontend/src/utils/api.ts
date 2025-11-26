@@ -1,4 +1,4 @@
-import { CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, SchedulesResponse } from "@full-stack/types";
+import { CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, SchedulesResponse, CourseSearchResponse, RequirementsResponse, ScheduledCourse } from "@full-stack/types";
 
 // Define BACKEND_BASE_PATH here to avoid circular dependency with Navigation.tsx
 const BACKEND_BASE_PATH = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -34,22 +34,11 @@ const API = {
 
     // Cornell Course Roster API
     async searchCourses(query: string, roster = "SP26"): Promise<CornellClassResponse> {
-        const params = new URLSearchParams({
-            roster,
-            "acadCareer[]": "UG",
-            subject: query,
-        });
+        return API.request<CornellClassResponse>(`/api/cornell/search?q=${encodeURIComponent(query)}&roster=${roster}`);
+    },
 
-        const url = 'https://classes.cornell.edu/api/2.0/search/classes.json?' + params.toString();
-        
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: "Unknown error" }));
-            throw new Error(error.error || 'HTTP ${response.status}');
-        }
-
-        return response.json();
+    async searchCoursesBySubject(subject: string, roster = "SP26"): Promise<CornellClassResponse> {
+        return API.request<CornellClassResponse>(`/api/cornell/search?subject=${encodeURIComponent(subject)}&roster=${roster}`);
     },
 
     // Google Maps API
@@ -70,68 +59,189 @@ const API = {
         });
     },
 
-    // Placeholders
+    // Course Search API
+    async searchCourseById(courseId: number): Promise<CourseSearchResponse> {
+        return API.request<CourseSearchResponse>(`/api/courses/search/by-id?courseId=${courseId}`);
+    },
+
+    async searchRequirements(query: string): Promise<{ results: unknown[]; count: number }> {
+        return API.request<{ results: unknown[]; count: number }>(`/api/courses/search/requirements?q=${encodeURIComponent(query)}`);
+    },
+
+    async getCoursesByRequirement(requirementName: string): Promise<CourseSearchResponse> {
+        return API.request<CourseSearchResponse>(`/api/courses/search/by-requirement?requirementName=${encodeURIComponent(requirementName)}`);
+    },
+
+    async getAllRequirements(): Promise<RequirementsResponse> {
+        return API.request<RequirementsResponse>("/api/courses/requirements");
+    },
+
+    // Schedule Management with localStorage for client-side persistence
     async getSchedules(roster = "SP26", token: string): Promise<SchedulesResponse> {
-        // Return a mock empty schedule list
-        return {
-          schedules: [], // mimic no schedules found
-        };
-      },
+        // Note: token parameter kept for API compatibility
+        void token;
+        try {
+            const stored = localStorage.getItem(`schedules_${roster}`);
+            if (stored) {
+                const schedules = JSON.parse(stored) as Schedule[];
+                return { schedules };
+            }
+            return { schedules: [] };
+        } catch (error) {
+            console.error("Error reading schedules from localStorage:", error);
+            return { schedules: [] };
+        }
+    },
     
-      async createSchedule(
+    async createSchedule(
         roster: string,
-        courses: any[],
+        courses: ScheduledCourse[],
         token: string
-      ): Promise<{ schedule: Schedule }> {
+    ): Promise<{ schedule: Schedule }> {
+        try {
+            const scheduleId = `schedule_${Date.now()}`;
+            const schedule: Schedule = {
+                id: scheduleId,
+                userId: token ? "current-user" : "",
+                roster,
+                courses,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
 
-        return {
-          schedule: {
-            id: "",
-            userId: "",
-            roster: "SP26",
-            courses: [],
-            createdAt: "",
-            updatedAt: ""
-          },
-        };
-      },
+            // Try to load existing schedules
+            const existingSchedules = localStorage.getItem(`schedules_${roster}`);
+            const schedules: Schedule[] = existingSchedules ? JSON.parse(existingSchedules) : [];
+
+            // Check if schedule already exists, update or create
+            const existingIndex = schedules.findIndex(s => s.id === scheduleId);
+            if (existingIndex >= 0) {
+                schedules[existingIndex] = schedule;
+            } else if (schedules.length === 0) {
+                // First schedule
+                schedules.push(schedule);
+            } else {
+                // Replace the first (current) schedule
+                schedules[0] = schedule;
+            }
+
+            localStorage.setItem(`schedules_${roster}`, JSON.stringify(schedules));
+            return { schedule };
+        } catch (error) {
+            console.error("Error saving schedule to localStorage:", error);
+            throw error;
+        }
+    },
     
-      async updateCourse(
+    async updateCourse(
         scheduleId: string,
         courseId: string,
-        updates: { enrollGroupIndex?: number; meetings?: any[] },
-        token: string
-      ): Promise<{ schedule: Schedule }> {
+        updates: { enrollGroupIndex?: number; meetings?: ScheduledCourse["meetings"] }
+    ): Promise<{ schedule: Schedule }> {
+        try {
+            // Find the schedule across all rosters
+            let targetSchedule: Schedule | null = null;
+            let rosterKey = "";
 
-        return {
-          schedule: {
-            id: "",
-            userId: "",
-            roster: "SP26",
-            courses: [],
-            createdAt: "",
-            updatedAt: ""
-          },
-        };
-      },
+            for (const key of Object.keys(localStorage)) {
+                if (key.startsWith("schedules_")) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        const schedules: Schedule[] = JSON.parse(stored);
+                        const found = schedules.find(s => s.id === scheduleId);
+                        if (found) {
+                            targetSchedule = found;
+                            rosterKey = key;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!targetSchedule || !rosterKey) {
+                throw new Error("Schedule not found");
+            }
+
+            // Update the course
+            const courseIndex = targetSchedule.courses.findIndex(c => c.id === courseId);
+            if (courseIndex === -1) {
+                throw new Error("Course not found");
+            }
+
+            targetSchedule.courses[courseIndex] = {
+                ...targetSchedule.courses[courseIndex],
+                ...(updates.enrollGroupIndex !== undefined && { enrollGroupIndex: updates.enrollGroupIndex }),
+                ...(updates.meetings && { meetings: updates.meetings }),
+            };
+            targetSchedule.updatedAt = new Date().toISOString();
+
+            // Save back to localStorage
+            const stored = localStorage.getItem(rosterKey);
+            if (stored) {
+                const schedules: Schedule[] = JSON.parse(stored);
+                const scheduleIndex = schedules.findIndex(s => s.id === scheduleId);
+                if (scheduleIndex >= 0) {
+                    schedules[scheduleIndex] = targetSchedule;
+                    localStorage.setItem(rosterKey, JSON.stringify(schedules));
+                }
+            }
+
+            return { schedule: targetSchedule };
+        } catch (error) {
+            console.error("Error updating course in localStorage:", error);
+            throw error;
+        }
+    },
     
-      async deleteCourse(
+    async deleteCourse(
         scheduleId: string,
-        courseId: string,
-        token: string
-      ): Promise<{ schedule: Schedule }> {
+        courseId: string
+    ): Promise<{ schedule: Schedule }> {
+        try {
+            // Find the schedule across all rosters
+            let targetSchedule: Schedule | null = null;
+            let rosterKey = "";
 
-        return {
-          schedule: {
-            id: "",
-            userId: "",
-            roster: "SP26",
-            courses: [],
-            createdAt: "",
-            updatedAt: ""
-          },
-        };
-      },
+            for (const key of Object.keys(localStorage)) {
+                if (key.startsWith("schedules_")) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        const schedules: Schedule[] = JSON.parse(stored);
+                        const found = schedules.find(s => s.id === scheduleId);
+                        if (found) {
+                            targetSchedule = found;
+                            rosterKey = key;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!targetSchedule || !rosterKey) {
+                throw new Error("Schedule not found");
+            }
+
+            // Remove the course
+            targetSchedule.courses = targetSchedule.courses.filter(c => c.id !== courseId);
+            targetSchedule.updatedAt = new Date().toISOString();
+
+            // Save back to localStorage
+            const stored = localStorage.getItem(rosterKey);
+            if (stored) {
+                const schedules: Schedule[] = JSON.parse(stored);
+                const scheduleIndex = schedules.findIndex(s => s.id === scheduleId);
+                if (scheduleIndex >= 0) {
+                    schedules[scheduleIndex] = targetSchedule;
+                    localStorage.setItem(rosterKey, JSON.stringify(schedules));
+                }
+            }
+
+            return { schedule: targetSchedule };
+        } catch (error) {
+            console.error("Error deleting course from localStorage:", error);
+            throw error;
+        }
+    },
 };
 
 export default API;

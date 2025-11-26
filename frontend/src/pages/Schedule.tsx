@@ -17,6 +17,7 @@ const SchedulePage = () => {
         loading: scheduleLoading,
         addCourse,
         updateCourseSection,
+        updateSelectedSections,
         removeCourse,
     } = useSchedule();
     const [courseDataCache, setCourseDataCache] = useState<
@@ -188,6 +189,17 @@ const SchedulePage = () => {
         }
     };
 
+    const handleUpdateSelectedSections = async (
+        courseId: string,
+        selectedSections: ScheduledCourse["selectedSections"]
+    ) => {
+        try {
+            await updateSelectedSections(courseId, selectedSections);
+        } catch (error) {
+            console.error("Failed to update selected sections:", error);
+        }
+    };
+
     const getCourseData = (course: ScheduledCourse): CornellClass | null => {
         return courseDataCache.get(course.crseId.toString()) || null;
     };
@@ -216,6 +228,7 @@ const SchedulePage = () => {
                                 courses={schedule?.courses || []}
                                 onRemoveCourse={handleRemoveCourse}
                                 onUpdateSection={handleUpdateSection}
+                                onUpdateSelectedSections={handleUpdateSelectedSections}
                                 getCourseData={getCourseData}
                             />
                         </Paper>
