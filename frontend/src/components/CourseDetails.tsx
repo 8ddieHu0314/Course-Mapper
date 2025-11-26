@@ -20,7 +20,6 @@ interface CourseDetailsProps {
 export const CourseDetails = ({
     courses,
     onRemoveCourse,
-    onUpdateSection,
     onUpdateSelectedSections,
     getCourseData,
 }: CourseDetailsProps) => {

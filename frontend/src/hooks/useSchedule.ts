@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Schedule, ScheduledCourse, CornellClass } from "@full-stack/types";
+import { Schedule, ScheduledCourse, ScheduledCourseSection, CornellClass } from "@full-stack/types";
 import API from "../utils/api";
 import { useAuth } from "./useAuth";
 
@@ -22,13 +22,7 @@ export const useSchedule = () => {
             const response = await API.getSchedules(ROSTER, idToken);
             
             if (response.schedules.length > 0) {
-                const loadedSchedule = response.schedules[0];
-                console.log("[loadSchedule] Loaded schedule courses:", loadedSchedule.courses);
-                const math2940 = loadedSchedule.courses.find(c => c.subject === "MATH" && c.catalogNbr === "2940");
-                if (math2940) {
-                    console.log("[loadSchedule] MATH 2940 from API:", math2940);
-                }
-                setSchedule(loadedSchedule);
+                setSchedule(response.schedules[0]);
             } else {
                 // Create new schedule
                 const newSchedule = await API.createSchedule(ROSTER, [], idToken);
@@ -59,7 +53,7 @@ export const useSchedule = () => {
         const courseId = `${cornellClass.crseId}-${Date.now()}`;
 
         // Initialize selectedSections with the primary lecture section
-        const primarySection: ScheduledCourse["selectedSections"][0] = {
+        const primarySection: ScheduledCourseSection = {
             enrollGroupIndex,
             classSectionIndex,
             section: classSection.section,
@@ -180,4 +174,3 @@ export const useSchedule = () => {
         refreshSchedule: loadSchedule,
     };
 };
-

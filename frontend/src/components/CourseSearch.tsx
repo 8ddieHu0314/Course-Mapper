@@ -55,7 +55,6 @@ export const CourseSearch = ({ onSelect }: CourseSearchProps) => {
                 // Search course database by requirements
                 try {
                     const dbResponse = await API.searchRequirements(value);
-                    // For now, we'll show requirement matches in the results
                     if (dbResponse.results && dbResponse.results.length > 0) {
                         console.log("Database search results:", dbResponse.results);
                     }
