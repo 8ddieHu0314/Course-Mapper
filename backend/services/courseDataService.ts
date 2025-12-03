@@ -67,7 +67,7 @@ class CourseDataService {
             // Build index for faster lookups
             this.buildIndex();
             
-            console.log("✓ Course data loaded successfully");
+            console.log("Course data loaded successfully");
             console.log(`  - Indexed ${this.courseIndex.size} unique courses`);
         } catch (error) {
             console.error("Failed to load course data:", error);

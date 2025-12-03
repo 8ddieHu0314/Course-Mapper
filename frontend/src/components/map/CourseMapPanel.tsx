@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Text, Stack, Loader, Center } from "@mantine/core";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, InfoWindow } from "@react-google-maps/api";
+import { CircleMarker } from "./AdvancedMarker";
 import { ScheduledCourse } from "@full-stack/types";
 import { getCourseColor } from "../../utils/scheduleTransform";
 import { TBANotice } from "./TBANotice";
@@ -146,55 +147,56 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                             fullscreenControl: false,
                             mapTypeControl: false,
                             streetViewControl: false,
+                            clickableIcons: false,
                         }}
                     >
                         {courseLocations.map((location) => {
                             const pinColor = getDarkerColor(location.color);
                             
                             return (
-                                <div key={location.id}>
-                                    <Marker
-                                        position={location.coordinates}
-                                        onClick={() => setSelectedMarker(location.id)}
-                                        icon={{
-                                            path: google.maps.SymbolPath.CIRCLE,
-                                            fillColor: pinColor,
-                                            fillOpacity: 1,
-                                            scale: 10,
-                                            strokeColor: "#fff",
-                                            strokeWeight: 2,
-                                        }}
-                                        title={location.courseCode}
-                                    />
-                                    {selectedMarker === location.id && (
-                                        <InfoWindow
-                                            position={location.coordinates}
-                                            onCloseClick={() => setSelectedMarker(null)}
-                                        >
-                                            <div style={{ padding: "4px", minWidth: "150px" }}>
-                                                <strong style={{ fontSize: "14px" }}>{location.courseCode}</strong>
-                                                <p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>
-                                                    {location.title}
-                                                </p>
-                                                <p style={{ margin: "4px 0", fontSize: "12px" }}>
-                                                    <span style={{ 
-                                                        display: "inline-block",
-                                                        padding: "2px 6px",
-                                                        borderRadius: "4px",
-                                                        backgroundColor: location.color,
-                                                        marginRight: "8px",
-                                                        fontSize: "11px"
-                                                    }}>
-                                                        {location.ssrComponent}
-                                                    </span>
-                                                    {location.building}
-                                                </p>
-                                            </div>
-                                        </InfoWindow>
-                                    )}
-                                </div>
+                                <CircleMarker
+                                    key={location.id}
+                                    position={location.coordinates}
+                                    onClick={() => setSelectedMarker(location.id)}
+                                    color={pinColor}
+                                    size={20}
+                                    title={location.courseCode}
+                                />
                             );
                         })}
+
+                        {/* Single InfoWindow - rendered outside of markers */}
+                        {selectedMarker && (() => {
+                            const location = courseLocations.find((loc) => loc.id === selectedMarker);
+                            if (!location) return null;
+
+                            return (
+                                <InfoWindow
+                                    position={location.coordinates}
+                                    onCloseClick={() => setSelectedMarker(null)}
+                                >
+                                    <div style={{ padding: "4px", minWidth: "150px" }}>
+                                        <strong style={{ fontSize: "14px" }}>{location.courseCode}</strong>
+                                        <p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>
+                                            {location.title}
+                                        </p>
+                                        <p style={{ margin: "4px 0", fontSize: "12px" }}>
+                                            <span style={{ 
+                                                display: "inline-block",
+                                                padding: "2px 6px",
+                                                borderRadius: "4px",
+                                                backgroundColor: location.color,
+                                                marginRight: "8px",
+                                                fontSize: "11px"
+                                            }}>
+                                                {location.ssrComponent}
+                                            </span>
+                                            {location.building}
+                                        </p>
+                                    </div>
+                                </InfoWindow>
+                            );
+                        })()}
                     </GoogleMap>
                 )}
             </div>

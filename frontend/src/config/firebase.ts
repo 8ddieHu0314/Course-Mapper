@@ -24,15 +24,15 @@ console.log("Firebase Config:", {
 let app;
 try {
     app = initializeApp(firebaseConfig);
-    console.log("✓ Firebase initialized successfully");
+    console.log("Firebase initialized successfully");
 } catch (error) {
-    console.error("✗ Firebase initialization error:", error);
+    console.error("Firebase initialization error:", error);
 }
 
 // Initialize Analytics
 try {
     getAnalytics(app);
-    console.log("✓ Analytics initialized");
+    console.log("Analytics initialized");
 } catch (error) {
     console.warn("Analytics initialization skipped:", error);
 }

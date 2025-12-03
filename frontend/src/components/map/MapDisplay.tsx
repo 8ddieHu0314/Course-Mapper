@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Paper, Loader, Center, Text } from "@mantine/core";
-import { GoogleMap, useJsApiLoader, Polyline, Marker, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Polyline, InfoWindow } from "@react-google-maps/api";
+import { CircleMarker } from "./AdvancedMarker";
 import { DayOfTheWeek, getDayAbbreviation } from "../../utils/calendar-utils";
 import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
 import { TBANotice } from "./TBANotice";
@@ -138,6 +139,7 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                             fullscreenControl: false,
                             mapTypeControl: false,
                             streetViewControl: false,
+                            clickableIcons: false,
                         }}
                     >
                         {/* Draw routes between classes */}
@@ -165,32 +167,41 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                             const courseLabel = `${course.metadata?.subject} ${course.metadata?.catalogNbr}`;
 
                             return (
-                                <div key={idx}>
-                                    <Marker
-                                        position={dayMeeting.coordinates}
-                                        onClick={() => setSelectedMarker(courseLabel)}
-                                        icon={{
-                                            path: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z",
-                                            fillColor: POLYLINE_COLORS[idx % POLYLINE_COLORS.length],
-                                            fillOpacity: 1,
-                                            scale: 2,
-                                            strokeColor: "#fff",
-                                            strokeWeight: 2,
-                                        }}
-                                        title={courseLabel}
-                                    />
-                                    {selectedMarker === courseLabel && (
-                                        <InfoWindow position={dayMeeting.coordinates}>
-                                            <div style={{ padding: "8px" }}>
-                                                <strong>{courseLabel}</strong>
-                                                <p>{dayMeeting.timeStart} - {dayMeeting.timeEnd}</p>
-                                                <p>{dayMeeting.displayLocation || dayMeeting.facilityDescr || dayMeeting.bldgDescr}</p>
-                                            </div>
-                                        </InfoWindow>
-                                    )}
-                                </div>
+                                <CircleMarker
+                                    key={idx}
+                                    position={dayMeeting.coordinates}
+                                    onClick={() => setSelectedMarker(courseLabel)}
+                                    color={POLYLINE_COLORS[idx % POLYLINE_COLORS.length]}
+                                    size={24}
+                                    title={courseLabel}
+                                />
                             );
                         })}
+
+                        {/* Single InfoWindow - rendered outside of markers */}
+                        {selectedMarker && (() => {
+                            const selectedCourse = courses.find((c) => {
+                                const label = `${c.metadata?.subject} ${c.metadata?.catalogNbr}`;
+                                return label === selectedMarker;
+                            });
+                            const dayMeeting = selectedCourse?.metadata?.meetings.find(
+                                (m: ScheduledMeeting) => m.pattern.includes(dayAbbr)
+                            );
+                            if (!dayMeeting?.coordinates) return null;
+
+                            return (
+                                <InfoWindow
+                                    position={dayMeeting.coordinates}
+                                    onCloseClick={() => setSelectedMarker(null)}
+                                >
+                                    <div style={{ padding: "8px" }}>
+                                        <strong>{selectedMarker}</strong>
+                                        <p>{dayMeeting.timeStart} - {dayMeeting.timeEnd}</p>
+                                        <p>{dayMeeting.displayLocation || dayMeeting.facilityDescr || dayMeeting.bldgDescr}</p>
+                                    </div>
+                                </InfoWindow>
+                            );
+                        })()}
                     </GoogleMap>
                 )}
             </div>

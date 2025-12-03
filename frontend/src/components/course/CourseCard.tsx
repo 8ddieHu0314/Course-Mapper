@@ -38,11 +38,11 @@ export const CourseCard = ({ block, metadata, day }: CourseCardProps) => {
                 </div>
                 {isTBA ? (
                     <div className={`${styles.courseLocation} ${styles.locationTBA}`}>
-                        ⚠️ Location TBA - Not shown on map
+                        Location TBA - Not shown on map
                     </div>
                 ) : location && (
                     <div className={styles.courseLocation}>
-                        📍 {location}
+                        {location}
                     </div>
                 )}
             </div>

@@ -20,7 +20,7 @@ export const TBANotice = ({ courses }: TBANoticeProps) => {
     return (
         <div className={styles.container}>
             <Text size="sm" fw={600} className={styles.header}>
-                ⚠️ Courses with no location ({courses.length}):
+                Courses with no location ({courses.length}):
             </Text>
             <div className={styles.list}>
                 {courses.map((course, idx) => (

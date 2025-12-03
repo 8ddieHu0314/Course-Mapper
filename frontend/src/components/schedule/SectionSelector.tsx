@@ -179,7 +179,7 @@ export const SectionSelector = ({
                         </Group>
                     )}
                     <Text size="xs" c="dimmed" mt="xs">
-                        💡 Click any course block on the calendar to toggle between selected sections
+                        Click any course block on the calendar to toggle between selected sections
                     </Text>
                 </>
             )}
