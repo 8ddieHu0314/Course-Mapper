@@ -4,8 +4,10 @@ import { GoogleMap, useJsApiLoader, Polyline, InfoWindow } from "@react-google-m
 import { CircleMarker } from "./AdvancedMarker";
 import { DayOfTheWeek, getDayAbbreviation } from "../../utils/calendar-utils";
 import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
+import { createCourseColorMap, getCourseMarkerColor } from "../../utils/scheduleTransform";
 import { TBANotice } from "./TBANotice";
 import { RouteList } from "./RouteList";
+import "./MapStyles.css";
 
 interface CourseDayItem {
     block: {
@@ -19,20 +21,10 @@ interface CourseDayItem {
 interface MapDisplayProps {
     courses: CourseDayItem[];
     day: DayOfTheWeek;
+    allCourses?: ScheduledCourse[]; // All courses for consistent color mapping
 }
 
-const POLYLINE_COLORS = [
-    "#FF6B6B", // Red
-    "#4ECDC4", // Teal
-    "#45B7D1", // Blue
-    "#FFA07A", // Salmon
-    "#98D8C8", // Mint
-    "#F7DC6F", // Yellow
-    "#BB8FCE", // Purple
-    "#85C1E2", // Sky Blue
-];
-
-export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
+export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
     const [routes, setRoutes] = useState<Array<{
         path: Array<{ lat: number; lng: number }>;
         color: string;
@@ -46,6 +38,19 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
     });
 
     const dayAbbr = getDayAbbreviation(day);
+
+    // Create unified color map - use allCourses if provided for consistency across views
+    const courseColorMap = useMemo(() => {
+        const coursesToMap = allCourses || courses
+            .filter((c) => c.metadata !== null)
+            .map((c) => c.metadata as ScheduledCourse);
+        return createCourseColorMap(coursesToMap);
+    }, [allCourses, courses]);
+
+    // Helper to get marker color for a course
+    const getMarkerColor = (courseCode: string): string => {
+        return getCourseMarkerColor(courseCode, courseColorMap);
+    };
 
     // Compute TBA courses for the notice
     const tbaCourses = useMemo(() => {
@@ -63,7 +68,7 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
 
     useEffect(() => {
         const calculateRoutes = () => {
-            const dummyRoutes: typeof routes = [];
+            const calculatedRoutes: typeof routes = [];
 
             for (let i = 0; i < courses.length - 1; i++) {
                 const fromCourse = courses[i];
@@ -93,16 +98,17 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                     const fromLabel = `${fromCourse.metadata.subject} ${fromCourse.metadata.catalogNbr}`;
                     const toLabel = `${toCourse.metadata.subject} ${toCourse.metadata.catalogNbr}`;
 
-                    dummyRoutes.push({
+                    // Use gray color for routes to distinguish from markers
+                    calculatedRoutes.push({
                         path,
-                        color: POLYLINE_COLORS[i % POLYLINE_COLORS.length],
+                        color: "#666666",
                         fromCourse: fromLabel,
                         toCourse: toLabel,
                     });
                 }
             }
 
-            setRoutes(dummyRoutes);
+            setRoutes(calculatedRoutes);
         };
 
         calculateRoutes();
@@ -171,7 +177,7 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                                     key={idx}
                                     position={dayMeeting.coordinates}
                                     onClick={() => setSelectedMarker(courseLabel)}
-                                    color={POLYLINE_COLORS[idx % POLYLINE_COLORS.length]}
+                                    color={getMarkerColor(courseLabel)}
                                     size={24}
                                     title={courseLabel}
                                 />
@@ -193,11 +199,36 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                                 <InfoWindow
                                     position={dayMeeting.coordinates}
                                     onCloseClick={() => setSelectedMarker(null)}
+                                    options={{ maxWidth: 180 }}
                                 >
-                                    <div style={{ padding: "8px" }}>
-                                        <strong>{selectedMarker}</strong>
-                                        <p>{dayMeeting.timeStart} - {dayMeeting.timeEnd}</p>
-                                        <p>{dayMeeting.displayLocation || dayMeeting.facilityDescr || dayMeeting.bldgDescr}</p>
+                                    <div style={{ 
+                                        padding: "8px 24px 8px 8px", 
+                                        maxWidth: "160px",
+                                        lineHeight: 1.3
+                                    }}>
+                                        <div style={{ 
+                                            fontSize: "13px", 
+                                            fontWeight: 600,
+                                            marginBottom: "4px",
+                                            wordWrap: "break-word"
+                                        }}>
+                                            {selectedMarker}
+                                        </div>
+                                        <div style={{ 
+                                            fontSize: "11px", 
+                                            color: "#666",
+                                            marginBottom: "2px"
+                                        }}>
+                                            {dayMeeting.timeStart} - {dayMeeting.timeEnd}
+                                        </div>
+                                        <div style={{ 
+                                            fontSize: "11px",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap"
+                                        }}>
+                                            {dayMeeting.displayLocation || dayMeeting.facilityDescr || dayMeeting.bldgDescr}
+                                        </div>
                                     </div>
                                 </InfoWindow>
                             );

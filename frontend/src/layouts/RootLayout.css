@@ -7,17 +7,42 @@
 }
 
 .header {
-    padding: 1rem;
-    border-bottom: 1px solid #ccc;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.nav-links {
+    display: flex;
+    gap: 0.5rem;
 }
 
 .nav-link {
-    margin-right: 1rem;
     text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: #495057;
+    background-color: transparent;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: #e9ecef;
+    color: #228be6;
+    border-color: #dee2e6;
+}
+
+.nav-link:active {
+    background-color: #dee2e6;
+    transform: scale(0.98);
 }
 
 .content {

@@ -83,6 +83,7 @@ const MapViewPage = () => {
                     <MapDisplay
                         courses={selectedDayCourses}
                         day={selectedDay}
+                        allCourses={schedule.courses}
                     />
                 </Grid.Col>
             </Grid>

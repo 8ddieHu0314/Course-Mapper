@@ -24,9 +24,10 @@ export type Time = {
 export type CourseBlock = {
   code: string;
   name: string;
-  color: string;
-  timeStart: string; // e.g., "10:00am"
-  timeEnd: string;   // e.g., "11:15am"
+  color: string;         // Background color (light)
+  borderColor: string;   // Border/marker color (dark)
+  timeStart: string;     // e.g., "10:00am"
+  timeEnd: string;       // e.g., "11:15am"
   daysOfTheWeek: DayOfTheWeek[];
 };
 

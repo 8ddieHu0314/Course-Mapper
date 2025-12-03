@@ -3,8 +3,9 @@ import { Text, Stack, Loader, Center } from "@mantine/core";
 import { GoogleMap, useJsApiLoader, InfoWindow } from "@react-google-maps/api";
 import { CircleMarker } from "./AdvancedMarker";
 import { ScheduledCourse } from "@full-stack/types";
-import { getCourseColor } from "../../utils/scheduleTransform";
+import { createCourseColorMap, getCourseMarkerColor, getCourseBackgroundColor } from "../../utils/scheduleTransform";
 import { TBANotice } from "./TBANotice";
+import "./MapStyles.css";
 
 interface CourseMapPanelProps {
     courses: ScheduledCourse[];
@@ -30,6 +31,9 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
     });
 
+    // Create unified color map for all courses
+    const courseColorMap = useMemo(() => createCourseColorMap(courses), [courses]);
+
     // Extract unique course locations with their colors
     const { courseLocations, tbaCourses } = useMemo(() => {
         const locations: CourseLocation[] = [];
@@ -54,15 +58,13 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                         if (!seenLocations.has(locationKey)) {
                             seenLocations.add(locationKey);
                             
-                            const color = getCourseColor(course.subject, section.ssrComponent);
-                            
                             locations.push({
                                 id: locationKey,
                                 courseCode,
                                 title: course.title,
                                 building: meeting.displayLocation || meeting.facilityDescr || meeting.bldgDescr || "Unknown Location",
                                 coordinates: meeting.coordinates,
-                                color,
+                                color: getCourseBackgroundColor(courseCode, courseColorMap),
                                 ssrComponent: section.ssrComponent,
                             });
                         }
@@ -83,7 +85,7 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
         });
 
         return { courseLocations: locations, tbaCourses: tbaList };
-    }, [courses]);
+    }, [courses, courseColorMap]);
 
     // Calculate map bounds to fit all markers
     const mapCenter = useMemo(() => {
@@ -95,22 +97,9 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
         return { lat: avgLat, lng: avgLng };
     }, [courseLocations]);
 
-    // Convert hex color to a darker shade for pin
-    const getDarkerColor = (color: string): string => {
-        // If it's an HSL color, darken it
-        if (color.startsWith("hsl")) {
-            return color.replace(/85%\)$/, "45%)");
-        }
-        // For hex colors, return as-is (they're already light background colors)
-        // We'll use a mapping for component types
-        const componentColorMap: Record<string, string> = {
-            "#e3f2fd": "#1976d2", // LEC - blue
-            "#f3e5f5": "#7b1fa2", // DIS - purple
-            "#e8f5e9": "#388e3c", // REC - green
-            "#fff3e0": "#f57c00", // LAB - orange
-            "#fce4ec": "#c2185b", // PRJ - pink
-        };
-        return componentColorMap[color] || "#666666";
+    // Get marker color for a course
+    const getMarkerColor = (courseCode: string): string => {
+        return getCourseMarkerColor(courseCode, courseColorMap);
     };
 
     return (
@@ -150,20 +139,16 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                             clickableIcons: false,
                         }}
                     >
-                        {courseLocations.map((location) => {
-                            const pinColor = getDarkerColor(location.color);
-                            
-                            return (
-                                <CircleMarker
-                                    key={location.id}
-                                    position={location.coordinates}
-                                    onClick={() => setSelectedMarker(location.id)}
-                                    color={pinColor}
-                                    size={20}
-                                    title={location.courseCode}
-                                />
-                            );
-                        })}
+                        {courseLocations.map((location) => (
+                            <CircleMarker
+                                key={location.id}
+                                position={location.coordinates}
+                                onClick={() => setSelectedMarker(location.id)}
+                                color={getMarkerColor(location.courseCode)}
+                                size={20}
+                                title={location.courseCode}
+                            />
+                        ))}
 
                         {/* Single InfoWindow - rendered outside of markers */}
                         {selectedMarker && (() => {
@@ -174,25 +159,49 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                                 <InfoWindow
                                     position={location.coordinates}
                                     onCloseClick={() => setSelectedMarker(null)}
+                                    options={{ maxWidth: 180 }}
                                 >
-                                    <div style={{ padding: "4px", minWidth: "150px" }}>
-                                        <strong style={{ fontSize: "14px" }}>{location.courseCode}</strong>
-                                        <p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>
+                                    <div style={{ 
+                                        padding: "8px 24px 8px 8px", 
+                                        maxWidth: "160px",
+                                        lineHeight: 1.3
+                                    }}>
+                                        <div style={{ 
+                                            fontSize: "13px", 
+                                            fontWeight: 600,
+                                            marginBottom: "4px",
+                                            wordWrap: "break-word"
+                                        }}>
+                                            {location.courseCode}
+                                        </div>
+                                        <div style={{ 
+                                            fontSize: "11px", 
+                                            color: "#666",
+                                            marginBottom: "4px",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap"
+                                        }}>
                                             {location.title}
-                                        </p>
-                                        <p style={{ margin: "4px 0", fontSize: "12px" }}>
+                                        </div>
+                                        <div style={{ fontSize: "11px", display: "flex", alignItems: "center", gap: "4px" }}>
                                             <span style={{ 
-                                                display: "inline-block",
-                                                padding: "2px 6px",
-                                                borderRadius: "4px",
+                                                padding: "1px 4px",
+                                                borderRadius: "3px",
                                                 backgroundColor: location.color,
-                                                marginRight: "8px",
-                                                fontSize: "11px"
+                                                fontSize: "10px",
+                                                flexShrink: 0
                                             }}>
                                                 {location.ssrComponent}
                                             </span>
-                                            {location.building}
-                                        </p>
+                                            <span style={{ 
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap"
+                                            }}>
+                                                {location.building}
+                                            </span>
+                                        </div>
                                     </div>
                                 </InfoWindow>
                             );
@@ -228,7 +237,7 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                                     width: "12px",
                                     height: "12px",
                                     borderRadius: "50%",
-                                    backgroundColor: getDarkerColor(location.color),
+                                    backgroundColor: getMarkerColor(location.courseCode),
                                     marginRight: "8px",
                                     border: "2px solid white",
                                     boxShadow: "0 1px 2px rgba(0,0,0,0.2)"

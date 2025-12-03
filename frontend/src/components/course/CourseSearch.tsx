@@ -28,7 +28,6 @@ export const CourseSearch = ({ onSelect }: CourseSearchProps) => {
             try {
                 const combinedResults: EnhancedCourse[] = [];
 
-                // Extract subject code from input (e.g., "INFO" from "INFO 1300" or "INFO")
                 const parts = value.toUpperCase().split(/\s+/);
                 const subject = parts[0]; // First part should be the subject code
 
@@ -100,14 +99,14 @@ export const CourseSearch = ({ onSelect }: CourseSearchProps) => {
     return (
         <div style={{ width: "100%" }}>
             <Autocomplete
-                placeholder="Search for a course (e.g., INFO 1300)"
+                placeholder="Search for a course (e.g., INFO 1998)"
                 value={value}
                 onChange={setValue}
                 data={data}
                 onItemSubmit={handleItemSubmit}
                 rightSection={loading ? <Loader size="xs" /> : null}
                 style={{ width: "100%" }}
-                description="Searches both Cornell course roster and course requirements database"
+                description="Searches Cornell Class Roster"
             />
         </div>
     );

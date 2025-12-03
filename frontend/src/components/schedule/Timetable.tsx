@@ -108,6 +108,8 @@ export const Timetable = ({ courses }: TimetableProps) => {
             <div
                 style={{
                     display: "flex",
+                    flexDirection: "row",
+                    flex: 1,
                     border: "1px solid #ddd",
                     borderRadius: "4px",
                     padding: "2rem 0.5rem 1rem 1.5rem",
@@ -121,6 +123,7 @@ export const Timetable = ({ courses }: TimetableProps) => {
                         flexDirection: "column",
                         marginRight: "2rem",
                         minWidth: "80px",
+                        margin: "0",
                     }}
                 >
                     <div style={{ height: `${headerOffset}px` }}></div>
@@ -142,18 +145,23 @@ export const Timetable = ({ courses }: TimetableProps) => {
                 </div>
 
                 {/* Days columns */}
-                <div style={{ display: "flex", flexDirection: "row", flex: 1 }}>
-                    {DAYS.map((day) => {
+                <div style={{ 
+                        display: "flex", 
+                        flexDirection: "row", 
+                        flex: 1,
+                        marginRight: "1rem" }}>
+                    {DAYS.map((day, dayIdx) => {
                         const dayCourses = getCoursesForDay(day);
                         const columns = getOverlapColumns(dayCourses);
-
+                        
                         return (
                             <div
                                 key={day}
                                 style={{
-                                    width: "6rem",
+                                    flex: 1,
                                     position: "relative",
                                     borderLeft: "1px solid #eee",
+                                    borderRight: "1px solid #eee",
                                     minHeight: `${headerOffset + availablePixels}px`,
                                 }}
                             >
@@ -172,6 +180,22 @@ export const Timetable = ({ courses }: TimetableProps) => {
                                 >
                                     {day}
                                 </div>
+
+                                {/* Hour grid lines */}
+                                {scheduleData.hours.map((_, hourIdx) => (
+                                    <div
+                                        key={hourIdx}
+                                        style={{
+                                            position: "absolute",
+                                            top: `${headerOffset + hourIdx * hourHeight}px`,
+                                            left: 0,
+                                            right: 0,
+                                            height: "1px",
+                                            backgroundColor: "#eee",
+                                            pointerEvents: "none",
+                                        }}
+                                    />
+                                ))}
 
                                 {/* Course blocks */}
                                 {columns.map((column, colIdx) =>
@@ -200,13 +224,14 @@ export const Timetable = ({ courses }: TimetableProps) => {
                                                 key={`${block.code}-${block.timeStart}-${itemIdx}`}
                                                 style={{
                                                     position: "absolute",
-                                                    ...style,
+                                                    top: style.top,
+                                                    height: style.height,
                                                     left: `${leftPercent}%`,
                                                     width: `${widthPercent}%`,
                                                     backgroundColor: block.color,
                                                     borderLeftWidth: "4px",
                                                     borderLeftStyle: "solid",
-                                                    borderLeftColor: style.borderColor,
+                                                    borderLeftColor: block.borderColor,
                                                     paddingLeft: "8px",
                                                     padding: "4px",
                                                     fontSize: "11px",
