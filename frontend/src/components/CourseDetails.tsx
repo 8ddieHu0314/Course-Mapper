@@ -50,6 +50,7 @@ export const CourseDetails = ({
             classSectionIndex: 0,
             section: classSection.section,
             ssrComponent: classSection.ssrComponent,
+            classNbr: classSection.classNbr.toString(),
             meetings: newMeetings,
         };
 
@@ -79,6 +80,7 @@ export const CourseDetails = ({
                     classSectionIndex: sectionData.classSectionIndex,
                     section: sectionData.classSection.section,
                     ssrComponent: sectionData.classSection.ssrComponent,
+                    classNbr: sectionData.classSection.classNbr.toString(),
                     meetings: sectionData.classSection.meetings.map(m => ({
                         pattern: m.pattern,
                         timeStart: m.timeStart,
@@ -112,6 +114,7 @@ export const CourseDetails = ({
                 classSectionIndex: sectionData.classSectionIndex,
                 section: sectionData.classSection.section,
                 ssrComponent: sectionData.classSection.ssrComponent,
+                classNbr: sectionData.classSection.classNbr.toString(),
                 meetings: sectionData.classSection.meetings.map(m => ({
                     pattern: m.pattern,
                     timeStart: m.timeStart,

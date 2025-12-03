@@ -185,7 +185,7 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                                             <div style={{ padding: "8px" }}>
                                                 <strong>{courseLabel}</strong>
                                                 <p>{dayMeeting.timeStart} - {dayMeeting.timeEnd}</p>
-                                                <p>{dayMeeting.facilityDescr || dayMeeting.bldgDescr}</p>
+                                                <p>{dayMeeting.displayLocation || dayMeeting.facilityDescr || dayMeeting.bldgDescr}</p>
                                             </div>
                                         </InfoWindow>
                                     )}

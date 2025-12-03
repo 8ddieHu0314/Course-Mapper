@@ -171,6 +171,7 @@ export type ScheduledCourseSection = {
     classSectionIndex: number;
     section: string;
     ssrComponent: string;
+    classNbr: string;
     meetings: ScheduledMeeting[];
 };
 
@@ -181,6 +182,7 @@ export type ScheduledMeeting = {
     bldgDescr: string;
     facilityDescr: string;
     instructors: Instructor[];
+    displayLocation?: string;
     coordinates?: {
         lat: number;
         lng: number;

@@ -56,7 +56,7 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                                 id: locationKey,
                                 courseCode,
                                 title: course.title,
-                                building: meeting.facilityDescr || meeting.bldgDescr || "Unknown Location",
+                                building: meeting.displayLocation || meeting.facilityDescr || meeting.bldgDescr || "Unknown Location",
                                 coordinates: meeting.coordinates,
                                 color,
                                 ssrComponent: section.ssrComponent,

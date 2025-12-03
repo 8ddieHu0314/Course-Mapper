@@ -130,7 +130,7 @@ const MapViewPage = () => {
                                                 (m) => m.pattern.includes(dayAbbr)
                                             );
 
-                                            const location = dayMeeting?.facilityDescr || dayMeeting?.bldgDescr;
+                                            const location = dayMeeting?.displayLocation || dayMeeting?.facilityDescr || dayMeeting?.bldgDescr;
 
                                             return (
                                                 <Paper

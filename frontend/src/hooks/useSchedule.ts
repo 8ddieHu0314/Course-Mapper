@@ -68,6 +68,7 @@ export const useSchedule = () => {
             classSectionIndex,
             section: classSection.section,
             ssrComponent: classSection.ssrComponent,
+            classNbr: classSection.classNbr.toString(),
             meetings: classSection.meetings.map(meeting => ({
                 pattern: meeting.pattern,
                 timeStart: meeting.timeStart,
