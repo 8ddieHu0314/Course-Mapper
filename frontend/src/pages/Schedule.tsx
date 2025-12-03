@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Grid, Paper, Button, Modal, Text, Stack, Tabs } from "@mantine/core";
-import { IconList, IconMap } from "@tabler/icons-react";
+import { Container, Grid, Paper, Button, Modal, Text, Stack } from "@mantine/core";
 import { useAuth } from "../hooks/useAuth";
 import { useSchedule } from "../hooks/useSchedule";
-import { CourseSearch } from "../components/CourseSearch";
-import { Timetable } from "../components/Timetable";
-import { CourseDetails } from "../components/CourseDetails";
-import { CourseMapPanel } from "../components/CourseMapPanel";
+import { CourseSearch } from "../components/course";
+import { Timetable, CoursePanel } from "../components/schedule";
 import { CornellClass, ScheduledCourse } from "@full-stack/types";
 import { checkWalkingTime, getCoursesForDay } from "../utils/walkingTime";
 
@@ -207,7 +204,7 @@ const SchedulePage = () => {
     };
 
     return (
-        <Container fluid style={{ padding: "20px" }}>
+        <Container fluid p="md" style={{ width: "100%", maxWidth: "100%" }}>
             <Stack spacing="md">
                 <h1>Course Schedule</h1>
 
@@ -215,41 +212,21 @@ const SchedulePage = () => {
                     <CourseSearch onSelect={handleCourseSelect} />
                 </Paper>
 
-                <Grid>
+                <Grid align="stretch">
                     <Grid.Col span={8}>
-                        <Paper p="md" withBorder>
-                            <Timetable
-                                courses={schedule?.courses || []}
-                                onRemoveCourse={handleRemoveCourse}
-                            />
+                        <Paper p="md" withBorder style={{ height: "100%" }}>
+                            <Timetable courses={schedule?.courses || []} />
                         </Paper>
                     </Grid.Col>
                     <Grid.Col span={4}>
-                        <Paper withBorder style={{ height: "80vh", display: "flex", flexDirection: "column" }}>
-                            <Tabs defaultValue="details" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                                <Tabs.List>
-                                    <Tabs.Tab value="details" icon={<IconList size={14} />}>
-                                        Course Details
-                                    </Tabs.Tab>
-                                    <Tabs.Tab value="map" icon={<IconMap size={14} />}>
-                                        Map
-                                    </Tabs.Tab>
-                                </Tabs.List>
-
-                                <Tabs.Panel value="details" style={{ flex: 1, overflowY: "auto" }}>
-                                    <CourseDetails
-                                        courses={schedule?.courses || []}
-                                        onRemoveCourse={handleRemoveCourse}
-                                        onUpdateSection={handleUpdateSection}
-                                        onUpdateSelectedSections={handleUpdateSelectedSections}
-                                        getCourseData={getCourseData}
-                                    />
-                                </Tabs.Panel>
-
-                                <Tabs.Panel value="map" style={{ flex: 1, overflow: "hidden" }}>
-                                    <CourseMapPanel courses={schedule?.courses || []} />
-                                </Tabs.Panel>
-                            </Tabs>
+                        <Paper withBorder style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                            <CoursePanel
+                                courses={schedule?.courses || []}
+                                onRemoveCourse={handleRemoveCourse}
+                                onUpdateSection={handleUpdateSection}
+                                onUpdateSelectedSections={handleUpdateSelectedSections}
+                                getCourseData={getCourseData}
+                            />
                         </Paper>
                     </Grid.Col>
                 </Grid>

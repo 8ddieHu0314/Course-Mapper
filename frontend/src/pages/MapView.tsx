@@ -1,20 +1,12 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Grid, Paper, Stack, SegmentedControl, Title } from "@mantine/core";
 import { useAuth } from "../hooks/useAuth";
 import { useSchedule } from "../hooks/useSchedule";
-import { MapDisplay } from "../components/MapDisplay";
-import {
-    organizeCoursesByDay,
-    getMinMaxHours,
-    generateHoursRange,
-    getTotalMinutes,
-    DayOfTheWeek,
-} from "../utils/calendar-utils";
-import {
-    transformScheduledCoursesToCourseBlocks,
-    getCourseMetadata,
-} from "../utils/scheduleTransform";
+import { useScheduleData, useCoursesForDay } from "../hooks/useScheduleData";
+import { MapDisplay } from "../components/map";
+import { CourseCard } from "../components/course";
+import { DayOfTheWeek } from "../utils/calendar-utils";
 import "./MapView.css";
 
 const DAYS: DayOfTheWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -25,62 +17,19 @@ const MapViewPage = () => {
     const { schedule, loading: scheduleLoading } = useSchedule();
     const [selectedDay, setSelectedDay] = useState<DayOfTheWeek>("Monday");
 
+    // Use custom hooks for schedule data transformation
+    const scheduleData = useScheduleData(schedule?.courses || []);
+    const selectedDayCourses = useCoursesForDay(
+        schedule?.courses || [],
+        scheduleData,
+        selectedDay
+    );
+
     useEffect(() => {
         if (!authLoading && !user) {
             navigate("/");
         }
     }, [user, authLoading, navigate]);
-
-    // Transform courses to calendar format and organize by day
-    const scheduleData = useMemo(() => {
-        if (!schedule || schedule.courses.length === 0) {
-            return {
-                schedule: {
-                    Monday: [],
-                    Tuesday: [],
-                    Wednesday: [],
-                    Thursday: [],
-                    Friday: [],
-                    Saturday: [],
-                    Sunday: [],
-                },
-                minHour: 8,
-                maxHour: 16,
-                totalMinutes: 480,
-                hours: generateHoursRange(8, 16),
-            };
-        }
-
-        const courseBlocks = transformScheduledCoursesToCourseBlocks(schedule.courses);
-        const organizedSchedule = organizeCoursesByDay(courseBlocks);
-        const { minHour, maxHour } = getMinMaxHours(organizedSchedule);
-        const totalMinutes = getTotalMinutes(minHour, maxHour);
-        const hours = generateHoursRange(minHour, maxHour);
-
-        return {
-            schedule: organizedSchedule,
-            minHour,
-            maxHour,
-            totalMinutes,
-            hours,
-        };
-    }, [schedule]);
-
-    // Get courses for the selected day with metadata
-    const selectedDayCourses = useMemo(() => {
-        if (!schedule) return [];
-
-        const dayCourses = scheduleData.schedule[selectedDay] || [];
-        return dayCourses.map((block) => {
-            const metadata = getCourseMetadata(
-                schedule.courses,
-                block.code,
-                selectedDay,
-                block.timeStart
-            );
-            return { block, metadata };
-        });
-    }, [selectedDay, scheduleData, schedule]);
 
     if (authLoading || scheduleLoading || !user) {
         return <div>Loading...</div>;
@@ -90,17 +39,9 @@ const MapViewPage = () => {
         return <div>No schedule found</div>;
     }
 
-    const getDayAbbr = (): string => {
-        if (selectedDay === "Monday") return "M";
-        if (selectedDay === "Tuesday") return "T";
-        if (selectedDay === "Wednesday") return "W";
-        if (selectedDay === "Thursday") return "R";
-        return "F";
-    };
-
     return (
-        <Container fluid p="md" style={{ height: "100vh" }}>
-            <Grid style={{ height: "100%" }} gutter="md">
+        <Container fluid p="md" style={{ height: "100%", width: "100%", maxWidth: "100%", flex: 1, display: "flex", flexDirection: "column" }}>
+            <Grid style={{ flex: 1, width: "100%" }} gutter="md">
                 {/* Left Side - Day Calendar */}
                 <Grid.Col span={5} className="map-view-left">
                     <Paper p="md" withBorder style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -120,39 +61,14 @@ const MapViewPage = () => {
                             <div className="courses-list" style={{ flex: 1, overflowY: "auto" }}>
                                 {selectedDayCourses.length > 0 ? (
                                     <Stack spacing="xs">
-                                        {selectedDayCourses.map((item, idx) => {
-                                            const courseCode = item.metadata?.subject && item.metadata?.catalogNbr
-                                                ? `${item.metadata.subject} ${item.metadata.catalogNbr}`
-                                                : item.block.code;
-
-                                            const dayAbbr = getDayAbbr();
-                                            const dayMeeting = item.metadata?.meetings.find(
-                                                (m) => m.pattern.includes(dayAbbr)
-                                            );
-
-                                            const location = dayMeeting?.displayLocation || dayMeeting?.facilityDescr || dayMeeting?.bldgDescr;
-
-                                            return (
-                                                <Paper
-                                                    key={idx}
-                                                    p="sm"
-                                                    withBorder
-                                                    className="course-card"
-                                                >
-                                                    <div className="course-card-content">
-                                                        <div className="course-title">{courseCode}</div>
-                                                        <div className="course-time">
-                                                            {item.block.timeStart} - {item.block.timeEnd}
-                                                        </div>
-                                                        {location && (
-                                                            <div className="course-location">
-                                                                📍 {location}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </Paper>
-                                            );
-                                        })}
+                                        {selectedDayCourses.map((item, idx) => (
+                                            <CourseCard
+                                                key={idx}
+                                                block={item.block}
+                                                metadata={item.metadata}
+                                                day={selectedDay}
+                                            />
+                                        ))}
                                     </Stack>
                                 ) : (
                                     <div className="no-courses">No classes on this day</div>

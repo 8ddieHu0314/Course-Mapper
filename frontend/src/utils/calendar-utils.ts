@@ -106,6 +106,23 @@ export function parseTimeString(time: string): Time {
 // ============================================================================
 
 /**
+ * Converts a full day name to its abbreviation (e.g., "Monday" -> "M")
+ * Used for matching meeting patterns
+ */
+export function getDayAbbreviation(day: DayOfTheWeek): string {
+  const abbrevMap: Record<DayOfTheWeek, string> = {
+    Monday: "M",
+    Tuesday: "T",
+    Wednesday: "W",
+    Thursday: "R",
+    Friday: "F",
+    Saturday: "S",
+    Sunday: "Su",
+  };
+  return abbrevMap[day];
+}
+
+/**
  * Converts Cornell-style day pattern (e.g., "MWF", "TR") to array of day names
  * Handles special case: "Su" for Sunday (not just "S")
  */

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Autocomplete, Loader, AutocompleteItem } from "@mantine/core";
 import { CornellClass } from "@full-stack/types";
-import API from "../utils/api";
+import API from "../../utils/api";
 
 interface CourseSearchProps {
     onSelect: (course: CornellClass) => void;
@@ -112,4 +112,3 @@ export const CourseSearch = ({ onSelect }: CourseSearchProps) => {
         </div>
     );
 };
-

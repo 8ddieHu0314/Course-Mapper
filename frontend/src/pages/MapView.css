@@ -1,15 +1,22 @@
 .map-view-container {
     padding: 1rem;
+    width: 100%;
 }
 
 .map-view-left {
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 .map-view-right {
     display: flex;
     flex-direction: column;
+    height: 100%;
+}
+
+.map-view-right > div {
+    flex: 1;
 }
 
 .courses-list {

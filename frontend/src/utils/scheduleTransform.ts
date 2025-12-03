@@ -1,5 +1,5 @@
 import { ScheduledCourse } from "@full-stack/types";
-import { CourseBlock, DayOfTheWeek, formatTime, getDaysOfTheWeek } from "./calendar-utils";
+import { CourseBlock, DayOfTheWeek, formatTime, getDaysOfTheWeek, getDayAbbreviation } from "./calendar-utils";
 
 /**
  * Gets a color for a course based on subject and component type
@@ -109,20 +109,7 @@ export function getCourseMetadata(
       if (code !== courseCode) return false;
 
       // Check if course has a meeting matching the day and time
-      const dayAbbr =
-        day === "Monday"
-          ? "M"
-          : day === "Tuesday"
-          ? "T"
-          : day === "Wednesday"
-          ? "W"
-          : day === "Thursday"
-          ? "R"
-          : day === "Friday"
-          ? "F"
-          : day === "Saturday"
-          ? "S"
-          : "Su";
+      const dayAbbr = getDayAbbreviation(day);
 
       if (course.selectedSections && course.selectedSections.length > 0) {
         return course.selectedSections.some((section) =>

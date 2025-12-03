@@ -1,0 +1,68 @@
+/* Shared Color Variables */
+:root {
+    /* Warning/TBA Colors */
+    --tba-bg: #fff3e0;
+    --tba-border: #ff9800;
+    --tba-text: #e65100;
+
+    /* Component Type Colors */
+    --color-lecture-bg: #e3f2fd;
+    --color-lecture-pin: #1976d2;
+    --color-discussion-bg: #f3e5f5;
+    --color-discussion-pin: #7b1fa2;
+    --color-recitation-bg: #e8f5e9;
+    --color-recitation-pin: #388e3c;
+    --color-lab-bg: #fff3e0;
+    --color-lab-pin: #f57c00;
+    --color-project-bg: #fce4ec;
+    --color-project-pin: #c2185b;
+
+    /* Map Route Colors */
+    --route-color-1: #FF6B6B;
+    --route-color-2: #4ECDC4;
+    --route-color-3: #45B7D1;
+    --route-color-4: #FFA07A;
+    --route-color-5: #98D8C8;
+    --route-color-6: #F7DC6F;
+    --route-color-7: #BB8FCE;
+    --route-color-8: #85C1E2;
+
+    /* Cornell Campus Center */
+    --cornell-lat: 42.4534;
+    --cornell-lng: -76.4735;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+
+    /* Text Colors */
+    --text-primary: #333;
+    --text-secondary: #666;
+    --text-tertiary: #888;
+}
+
+/* Common Utility Classes */
+.flexCenter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flexColumn {
+    display: flex;
+    flex-direction: column;
+}
+
+.textEllipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+

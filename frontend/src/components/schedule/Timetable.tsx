@@ -1,68 +1,20 @@
-import { useNavigate } from "react-router-dom";
-import { useMemo } from "react";
 import { ScheduledCourse } from "@full-stack/types";
+import { getCourseMetadata } from "../../utils/scheduleTransform";
+import { useScheduleData } from "../../hooks/useScheduleData";
 import {
-    transformScheduledCoursesToCourseBlocks,
-    getCourseMetadata,
-} from "../utils/scheduleTransform";
-import {
-    organizeCoursesByDay,
-    getMinMaxHours,
-    generateHoursRange,
-    getTotalMinutes,
     getBlockStyle,
     parseTimeString,
     DayOfTheWeek,
-} from "../utils/calendar-utils";
+} from "../../utils/calendar-utils";
 
 interface TimetableProps {
     courses: ScheduledCourse[];
-    onRemoveCourse?: (courseId: string) => void;
 }
 
 const DAYS: DayOfTheWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-export const Timetable = ({ courses, onRemoveCourse }: TimetableProps) => {
-    const navigate = useNavigate();
-
-    const handleDayClick = (day: string) => {
-        navigate(`/schedule/${day.toLowerCase()}`);
-    };
-
-    // Transform courses to calendar format and organize by day
-    const scheduleData = useMemo(() => {
-        if (courses.length === 0) {
-            return {
-                schedule: {
-                    Monday: [],
-                    Tuesday: [],
-                    Wednesday: [],
-                    Thursday: [],
-                    Friday: [],
-                    Saturday: [],
-                    Sunday: [],
-                },
-                minHour: 8,
-                maxHour: 16,
-                totalMinutes: 480,
-                hours: generateHoursRange(8, 16),
-            };
-        }
-
-        const courseBlocks = transformScheduledCoursesToCourseBlocks(courses);
-        const schedule = organizeCoursesByDay(courseBlocks);
-        const { minHour, maxHour } = getMinMaxHours(schedule);
-        const totalMinutes = getTotalMinutes(minHour, maxHour);
-        const hours = generateHoursRange(minHour, maxHour);
-
-        return {
-            schedule,
-            minHour,
-            maxHour,
-            totalMinutes,
-            hours,
-        };
-    }, [courses]);
+export const Timetable = ({ courses }: TimetableProps) => {
+    const scheduleData = useScheduleData(courses);
 
     // Get courses for a specific day with metadata
     const getCoursesForDay = (day: DayOfTheWeek) => {
@@ -211,19 +163,11 @@ export const Timetable = ({ courses, onRemoveCourse }: TimetableProps) => {
                                         height: `${headerOffset}px`,
                                         padding: "8px",
                                         borderBottom: "1px solid #eee",
-                                        cursor: "pointer",
                                         backgroundColor: "#f5f5f5",
                                         fontWeight: "bold",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                    }}
-                                    onClick={() => handleDayClick(day)}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = "#e0e0e0";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = "#f5f5f5";
                                     }}
                                 >
                                     {day}
@@ -282,28 +226,6 @@ export const Timetable = ({ courses, onRemoveCourse }: TimetableProps) => {
                                                 <div style={{ fontSize: "10px" }}>
                                                     {block.timeStart} - {block.timeEnd}
                                                 </div>
-                                                {onRemoveCourse && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onRemoveCourse(metadata.id);
-                                                        }}
-                                                        style={{
-                                                            position: "absolute",
-                                                            top: "2px",
-                                                            right: "2px",
-                                                            background: "rgba(255,255,255,0.9)",
-                                                            border: "none",
-                                                            borderRadius: "2px",
-                                                            cursor: "pointer",
-                                                            fontSize: "10px",
-                                                            padding: "2px 4px",
-                                                            fontWeight: "bold",
-                                                        }}
-                                                    >
-                                                        ×
-                                                    </button>
-                                                )}
                                             </div>
                                         );
                                     })
@@ -316,4 +238,3 @@ export const Timetable = ({ courses, onRemoveCourse }: TimetableProps) => {
         </div>
     );
 };
-

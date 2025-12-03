@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Paper, Loader, Center, Text } from "@mantine/core";
 import { GoogleMap, useJsApiLoader, Polyline, Marker, InfoWindow } from "@react-google-maps/api";
-import { DayOfTheWeek } from "../utils/calendar-utils";
+import { DayOfTheWeek, getDayAbbreviation } from "../../utils/calendar-utils";
 import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
+import { TBANotice } from "./TBANotice";
+import { RouteList } from "./RouteList";
 
 interface CourseDayItem {
     block: {
@@ -42,27 +44,25 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
     });
 
-    const getDayAbbr = (): string => {
-        switch (day) {
-            case "Monday":
-                return "M";
-            case "Tuesday":
-                return "T";
-            case "Wednesday":
-                return "W";
-            case "Thursday":
-                return "R";
-            case "Friday":
-                return "F";
-            default:
-                return "M";
-        }
-    };
+    const dayAbbr = getDayAbbreviation(day);
+
+    // Compute TBA courses for the notice
+    const tbaCourses = useMemo(() => {
+        return courses
+            .filter((course) => {
+                const dayMeeting = course.metadata?.meetings.find(
+                    (m: ScheduledMeeting) => m.pattern.includes(dayAbbr)
+                );
+                return dayMeeting && (!dayMeeting.coordinates || dayMeeting.displayLocation === "TBA");
+            })
+            .map((course) => ({
+                courseCode: `${course.metadata?.subject} ${course.metadata?.catalogNbr}`,
+            }));
+    }, [courses, dayAbbr]);
 
     useEffect(() => {
         const calculateRoutes = () => {
             const dummyRoutes: typeof routes = [];
-            const dayAbbr = getDayAbbr();
 
             for (let i = 0; i < courses.length - 1; i++) {
                 const fromCourse = courses[i];
@@ -156,7 +156,6 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
 
                         {/* Mark class locations */}
                         {courses.map((course, idx) => {
-                            const dayAbbr = getDayAbbr();
                             const dayMeeting = course.metadata?.meetings.find(
                                 (m: ScheduledMeeting) => m.pattern.includes(dayAbbr)
                             );
@@ -196,33 +195,13 @@ export const MapDisplay = ({ courses, day }: MapDisplayProps) => {
                 )}
             </div>
 
-            {/* Route List */}
-            <div style={{ marginTop: "1rem", maxHeight: "150px", overflowY: "auto" }}>
-                <strong>Routes ({routes.length}):</strong>
-                {routes.length > 0 ? (
-                    <ul style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>
-                        {routes.map((route, idx) => (
-                            <li key={idx}>
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        width: "12px",
-                                        height: "12px",
-                                        borderRadius: "2px",
-                                        backgroundColor: route.color,
-                                        marginRight: "8px",
-                                    }}
-                                />
-                                {route.fromCourse} → {route.toCourse}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p style={{ fontSize: "0.85rem", color: "#999", marginTop: "0.5rem" }}>
-                        No routes calculated yet. Ensure courses have coordinates.
-                    </p>
-                )}
+            {/* TBA Courses Notice */}
+            <div style={{ marginTop: "1rem" }}>
+                <TBANotice courses={tbaCourses} />
             </div>
+
+            {/* Route List */}
+            <RouteList routes={routes} />
         </Paper>
     );
 };

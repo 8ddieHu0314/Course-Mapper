@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { Text, Stack, Loader, Center } from "@mantine/core";
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import { ScheduledCourse } from "@full-stack/types";
-import { getCourseColor } from "../utils/scheduleTransform";
+import { getCourseColor } from "../../utils/scheduleTransform";
+import { TBANotice } from "./TBANotice";
 
 interface CourseMapPanelProps {
     courses: ScheduledCourse[];
@@ -29,9 +30,11 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
     });
 
     // Extract unique course locations with their colors
-    const courseLocations = useMemo(() => {
+    const { courseLocations, tbaCourses } = useMemo(() => {
         const locations: CourseLocation[] = [];
+        const tbaList: Array<{ courseCode: string; title: string; ssrComponent: string }> = [];
         const seenLocations = new Set<string>();
+        const seenTBA = new Set<string>();
 
         courses.forEach((course) => {
             const courseCode = `${course.subject} ${course.catalogNbr}`;
@@ -43,10 +46,10 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
 
             sections.forEach((section) => {
                 section.meetings.forEach((meeting) => {
+                    const locationKey = `${courseCode}-${meeting.bldgDescr}-${section.ssrComponent}`;
+                    
                     if (meeting.coordinates) {
-                        // Create a unique key for this location
-                        const locationKey = `${courseCode}-${meeting.bldgDescr}-${section.ssrComponent}`;
-                        
+                        // Has coordinates - add to map
                         if (!seenLocations.has(locationKey)) {
                             seenLocations.add(locationKey);
                             
@@ -62,12 +65,23 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                                 ssrComponent: section.ssrComponent,
                             });
                         }
+                    } else if (meeting.displayLocation === "TBA" || !meeting.displayLocation) {
+                        // TBA location - track separately
+                        const tbaKey = `${courseCode}-${section.ssrComponent}`;
+                        if (!seenTBA.has(tbaKey)) {
+                            seenTBA.add(tbaKey);
+                            tbaList.push({
+                                courseCode,
+                                title: course.title,
+                                ssrComponent: section.ssrComponent,
+                            });
+                        }
                     }
                 });
             });
         });
 
-        return locations;
+        return { courseLocations: locations, tbaCourses: tbaList };
     }, [courses]);
 
     // Calculate map bounds to fit all markers
@@ -185,10 +199,13 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
                 )}
             </div>
 
+            {/* TBA Courses Notice */}
+            <TBANotice courses={tbaCourses} />
+
             {/* Course Legend */}
             {courseLocations.length > 0 && (
                 <div style={{ maxHeight: "150px", overflowY: "auto" }}>
-                    <Text size="sm" weight={500} mb="xs">Courses:</Text>
+                    <Text size="sm" weight={500} mb="xs">Courses on map:</Text>
                     {courseLocations.map((location) => (
                         <div 
                             key={location.id}
@@ -228,4 +245,3 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
         </Stack>
     );
 };
-
