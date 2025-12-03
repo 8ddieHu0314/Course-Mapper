@@ -29,6 +29,7 @@ export type CourseBlock = {
   timeStart: string;     // e.g., "10:00am"
   timeEnd: string;       // e.g., "11:15am"
   daysOfTheWeek: DayOfTheWeek[];
+  ssrComponent?: string; // e.g., "LEC", "DIS", "REC"
 };
 
 export type ClassesSchedule = {

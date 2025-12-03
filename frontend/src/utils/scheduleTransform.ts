@@ -143,6 +143,7 @@ export function transformScheduledCoursesToCourseBlocks(
               timeStart,
               timeEnd,
               daysOfTheWeek: [day],
+              ssrComponent: section.ssrComponent,
             });
           });
         });
@@ -166,6 +167,7 @@ export function transformScheduledCoursesToCourseBlocks(
             timeStart,
             timeEnd,
             daysOfTheWeek: [day],
+            ssrComponent: course.ssrComponent,
           });
         });
       });

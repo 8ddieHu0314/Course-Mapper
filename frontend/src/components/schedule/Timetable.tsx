@@ -246,7 +246,7 @@ export const Timetable = ({ courses }: TimetableProps) => {
                                                     {block.code}
                                                 </div>
                                                 <div style={{ fontSize: "10px", color: "#666" }}>
-                                                    {metadata.ssrComponent}
+                                                    {block.ssrComponent || metadata.ssrComponent}
                                                 </div>
                                                 <div style={{ fontSize: "10px" }}>
                                                     {block.timeStart} - {block.timeEnd}
