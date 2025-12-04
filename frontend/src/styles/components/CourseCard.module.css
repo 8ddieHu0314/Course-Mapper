@@ -1,0 +1,40 @@
+.card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cardContent {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.courseTitle {
+    font-weight: 600;
+    font-size: 15px;
+    color: #333;
+}
+
+.courseTime {
+    font-size: 13px;
+    color: #666;
+}
+
+.courseLocation {
+    font-size: 12px;
+    color: #888;
+}
+
+.locationTBA {
+    color: #ff9800;
+    font-style: italic;
+}
+
+.tbaBorder {
+    border-left: 4px solid #ff9800;
+}
+

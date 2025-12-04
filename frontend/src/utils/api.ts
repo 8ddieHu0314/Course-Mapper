@@ -76,20 +76,13 @@ const API = {
         return API.request<RequirementsResponse>("/api/courses/requirements");
     },
 
-    // Schedule Management with localStorage for client-side persistence
+    // Schedule Management - Backend Firebase API
     async getSchedules(roster = "SP26", token: string): Promise<SchedulesResponse> {
-        void token;
-        try {
-            const stored = localStorage.getItem(`schedules_${roster}`);
-            if (stored) {
-                const schedules = JSON.parse(stored) as Schedule[];
-                return { schedules };
-            }
-            return { schedules: [] };
-        } catch (error) {
-            console.error("Error reading schedules from localStorage:", error);
-            return { schedules: [] };
-        }
+        return API.request<SchedulesResponse>(
+            `/api/schedules?roster=${encodeURIComponent(roster)}`,
+            {},
+            token
+        );
     },
     
     async createSchedule(
@@ -97,149 +90,44 @@ const API = {
         courses: ScheduledCourse[],
         token: string
     ): Promise<{ schedule: Schedule }> {
-        try {
-            const scheduleId = `schedule_${Date.now()}`;
-            const schedule: Schedule = {
-                id: scheduleId,
-                userId: token ? "current-user" : "",
-                roster,
-                courses,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
-
-            // Try to load existing schedules
-            const existingSchedules = localStorage.getItem(`schedules_${roster}`);
-            const schedules: Schedule[] = existingSchedules ? JSON.parse(existingSchedules) : [];
-
-            // Check if schedule already exists, update or create
-            const existingIndex = schedules.findIndex(s => s.id === scheduleId);
-            if (existingIndex >= 0) {
-                schedules[existingIndex] = schedule;
-            } else if (schedules.length === 0) {
-                // First schedule
-                schedules.push(schedule);
-            } else {
-                // Replace the first (current) schedule
-                schedules[0] = schedule;
-            }
-
-            localStorage.setItem(`schedules_${roster}`, JSON.stringify(schedules));
-            return { schedule };
-        } catch (error) {
-            console.error("Error saving schedule to localStorage:", error);
-            throw error;
-        }
+        return API.request<{ schedule: Schedule }>(
+            "/api/schedules",
+            {
+                method: "POST",
+                body: JSON.stringify({ roster, courses }),
+            },
+            token
+        );
     },
     
     async updateCourse(
         scheduleId: string,
         courseId: string,
-        updates: { enrollGroupIndex?: number; meetings?: ScheduledCourse["meetings"] }
+        updates: { enrollGroupIndex?: number; meetings?: ScheduledCourse["meetings"] },
+        token: string
     ): Promise<{ schedule: Schedule }> {
-        try {
-            // Find the schedule across all rosters
-            let targetSchedule: Schedule | null = null;
-            let rosterKey = "";
-
-            for (const key of Object.keys(localStorage)) {
-                if (key.startsWith("schedules_")) {
-                    const stored = localStorage.getItem(key);
-                    if (stored) {
-                        const schedules: Schedule[] = JSON.parse(stored);
-                        const found = schedules.find(s => s.id === scheduleId);
-                        if (found) {
-                            targetSchedule = found;
-                            rosterKey = key;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!targetSchedule || !rosterKey) {
-                throw new Error("Schedule not found");
-            }
-
-            // Update the course
-            const courseIndex = targetSchedule.courses.findIndex(c => c.id === courseId);
-            if (courseIndex === -1) {
-                throw new Error("Course not found");
-            }
-
-            targetSchedule.courses[courseIndex] = {
-                ...targetSchedule.courses[courseIndex],
-                ...(updates.enrollGroupIndex !== undefined && { enrollGroupIndex: updates.enrollGroupIndex }),
-                ...(updates.meetings && { meetings: updates.meetings }),
-            };
-            targetSchedule.updatedAt = new Date().toISOString();
-
-            // Save back to localStorage
-            const stored = localStorage.getItem(rosterKey);
-            if (stored) {
-                const schedules: Schedule[] = JSON.parse(stored);
-                const scheduleIndex = schedules.findIndex(s => s.id === scheduleId);
-                if (scheduleIndex >= 0) {
-                    schedules[scheduleIndex] = targetSchedule;
-                    localStorage.setItem(rosterKey, JSON.stringify(schedules));
-                }
-            }
-
-            return { schedule: targetSchedule };
-        } catch (error) {
-            console.error("Error updating course in localStorage:", error);
-            throw error;
-        }
+        return API.request<{ schedule: Schedule }>(
+            `/api/schedules/${encodeURIComponent(scheduleId)}/courses/${encodeURIComponent(courseId)}`,
+            {
+                method: "PUT",
+                body: JSON.stringify(updates),
+            },
+            token
+        );
     },
     
     async deleteCourse(
         scheduleId: string,
-        courseId: string
+        courseId: string,
+        token: string
     ): Promise<{ schedule: Schedule }> {
-        try {
-            // Find the schedule across all rosters
-            let targetSchedule: Schedule | null = null;
-            let rosterKey = "";
-
-            for (const key of Object.keys(localStorage)) {
-                if (key.startsWith("schedules_")) {
-                    const stored = localStorage.getItem(key);
-                    if (stored) {
-                        const schedules: Schedule[] = JSON.parse(stored);
-                        const found = schedules.find(s => s.id === scheduleId);
-                        if (found) {
-                            targetSchedule = found;
-                            rosterKey = key;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!targetSchedule || !rosterKey) {
-                throw new Error("Schedule not found");
-            }
-
-            // Remove the course
-            targetSchedule.courses = targetSchedule.courses.filter(c => c.id !== courseId);
-            targetSchedule.updatedAt = new Date().toISOString();
-
-            // Save back to localStorage
-            const stored = localStorage.getItem(rosterKey);
-            if (stored) {
-                const schedules: Schedule[] = JSON.parse(stored);
-                const scheduleIndex = schedules.findIndex(s => s.id === scheduleId);
-                if (scheduleIndex >= 0) {
-                    schedules[scheduleIndex] = targetSchedule;
-                    localStorage.setItem(rosterKey, JSON.stringify(schedules));
-                }
-            }
-
-            return { schedule: targetSchedule };
-        } catch (error) {
-            console.error("Error deleting course from localStorage:", error);
-            throw error;
-        }
+        return API.request<{ schedule: Schedule }>(
+            `/api/schedules/${encodeURIComponent(scheduleId)}/courses/${encodeURIComponent(courseId)}`,
+            {
+                method: "DELETE",
+            },
+            token
+        );
     },
 };
 

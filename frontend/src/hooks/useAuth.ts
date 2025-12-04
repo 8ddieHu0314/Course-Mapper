@@ -16,7 +16,7 @@ export const useAuth = () => {
                 try {
                     const token = await user.getIdToken();
                     setIdToken(token);
-                    console.log("✓ Got ID token");
+                    console.log("Got ID token");
                 } catch (error) {
                     console.error("Failed to get ID token:", error);
                 }
@@ -34,7 +34,7 @@ export const useAuth = () => {
         try {
             console.log("Attempting Google login...");
             const result = await signInWithPopup(auth, googleProvider);
-            console.log("✓ Google login successful:", result.user.email);
+            console.log("Google login successful:", result.user.email);
             const token = await result.user.getIdToken();
             setIdToken(token);
             return result.user;
@@ -48,7 +48,7 @@ export const useAuth = () => {
         try {
             await signOut(auth);
             setIdToken(null);
-            console.log("✓ Logged out");
+            console.log("Logged out");
         } catch (error) {
             console.error("Logout error:", error);
             throw error;

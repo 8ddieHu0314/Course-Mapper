@@ -380,3 +380,8 @@ i {
     justify-content: center;
     width: 100%;
 }
+
+/* Fix Mantine fluid Container to actually be full width */
+.mantine-Container-root[data-fluid="true"] {
+    max-width: 100% !important;
+}

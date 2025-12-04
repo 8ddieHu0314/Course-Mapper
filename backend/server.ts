@@ -245,21 +245,50 @@ app.post("/api/schedules", verifyAuth, async (req, res) => {
         const userId = (req as any).userId;
         const { roster = "SP26", courses = [] } = req.body;
         
-        const scheduleData: Omit<Schedule, "id"> = {
-            userId,
-            roster,
-            courses,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
+        // Check if schedule already exists for this user + roster
+        const existingSchedules = await db
+            .collection("schedules")
+            .where("userId", "==", userId)
+            .where("roster", "==", roster)
+            .limit(1)
+            .get();
         
-        const docRef = await db.collection("schedules").add(scheduleData);
-        const schedule: Schedule = {
-            id: docRef.id,
-            ...scheduleData,
-        };
-        
-        res.json({ schedule });
+        if (!existingSchedules.empty) {
+            // Update existing schedule
+            const existingDoc = existingSchedules.docs[0];
+            await existingDoc.ref.update({
+                courses,
+                updatedAt: new Date().toISOString(),
+            });
+            
+            const schedule: Schedule = {
+                id: existingDoc.id,
+                userId,
+                roster,
+                courses,
+                createdAt: existingDoc.data().createdAt,
+                updatedAt: new Date().toISOString(),
+            };
+            
+            res.json({ schedule });
+        } else {
+            // Create new schedule
+            const scheduleData: Omit<Schedule, "id"> = {
+                userId,
+                roster,
+                courses,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            
+            const docRef = await db.collection("schedules").add(scheduleData);
+            const schedule: Schedule = {
+                id: docRef.id,
+                ...scheduleData,
+            };
+            
+            res.json({ schedule });
+        }
     } catch (error) {
         console.error("Create schedule error:", error);
         res.status(500).json({ error: "Failed to create schedule" } as ApiError);

@@ -4,7 +4,6 @@ import ErrorPage from "./pages/Error";
 import RootLayout from "./layouts/RootLayout";
 import HomePage from "./pages/Home";
 import SchedulePage from "./pages/Schedule";
-import DayViewPage from "./pages/DayView";
 import MapViewPage from "./pages/MapView";
 import "./index.css";
 
@@ -21,10 +20,6 @@ const router = createBrowserRouter([
             {
                 path: "/schedule",
                 element: <SchedulePage />,
-            },
-            {
-                path: "/schedule/:day",
-                element: <DayViewPage />,
             },
             {
                 path: "/map-view",

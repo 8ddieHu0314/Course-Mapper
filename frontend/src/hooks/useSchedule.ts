@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Schedule, ScheduledCourse, ScheduledCourseSection, CornellClass } from "@full-stack/types";
+import { Schedule, ScheduledCourse, CornellClass } from "@full-stack/types";
 import API from "../utils/api";
 import { useAuth } from "./useAuth";
 import { geocodeCourseMeetings, geocodeScheduleCourses } from "../utils/geocoding";
+import { toScheduledSection, toScheduledMeetings } from "../utils/meetingTransform";
 
 const ROSTER = "SP26";
 
@@ -63,20 +64,7 @@ export const useSchedule = () => {
         const courseId = `${cornellClass.crseId}-${Date.now()}`;
 
         // Initialize selectedSections with the primary lecture section
-        const primarySection: ScheduledCourseSection = {
-            enrollGroupIndex,
-            classSectionIndex,
-            section: classSection.section,
-            ssrComponent: classSection.ssrComponent,
-            meetings: classSection.meetings.map(meeting => ({
-                pattern: meeting.pattern,
-                timeStart: meeting.timeStart,
-                timeEnd: meeting.timeEnd,
-                bldgDescr: meeting.bldgDescr || "",
-                facilityDescr: meeting.facilityDescr || "",
-                instructors: meeting.instructors,
-            })),
-        };
+        const primarySection = toScheduledSection(classSection, enrollGroupIndex, classSectionIndex);
 
         const scheduledCourse: ScheduledCourse = {
             id: courseId,
@@ -88,14 +76,7 @@ export const useSchedule = () => {
             ssrComponent: classSection.ssrComponent,
             classNbr: classSection.classNbr.toString(),
             enrollGroupIndex,
-            meetings: classSection.meetings.map(meeting => ({
-                pattern: meeting.pattern,
-                timeStart: meeting.timeStart,
-                timeEnd: meeting.timeEnd,
-                bldgDescr: meeting.bldgDescr || "",
-                facilityDescr: meeting.facilityDescr || "",
-                instructors: meeting.instructors,
-            })),
+            meetings: toScheduledMeetings(classSection.meetings),
             units: enrollGroup.unitsMinimum.toString(),
             selectedSections: [primarySection],
         };
@@ -125,7 +106,8 @@ export const useSchedule = () => {
             const updated = await API.updateCourse(
                 schedule.id,
                 courseId,
-                { enrollGroupIndex, meetings: newMeetings }
+                { enrollGroupIndex, meetings: newMeetings },
+                idToken
             );
             setSchedule(updated.schedule);
         } catch (err) {
@@ -138,7 +120,7 @@ export const useSchedule = () => {
         if (!schedule || !idToken) return;
 
         try {
-            const updated = await API.deleteCourse(schedule.id, courseId);
+            const updated = await API.deleteCourse(schedule.id, courseId, idToken);
             setSchedule(updated.schedule);
         } catch (err) {
             console.error("Remove course error:", err);

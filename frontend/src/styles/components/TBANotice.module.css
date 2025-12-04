@@ -1,0 +1,30 @@
+.container {
+    padding: 0.75rem;
+    background-color: #fff3e0;
+    border-radius: 8px;
+    border-left: 4px solid #ff9800;
+}
+
+.header {
+    color: #e65100;
+}
+
+.list {
+    margin-top: 0.5rem;
+}
+
+.item {
+    font-size: 13px;
+    color: #e65100;
+    margin-bottom: 4px;
+}
+
+.courseCode {
+    font-weight: 600;
+}
+
+.component {
+    margin-left: 8px;
+    font-style: italic;
+}
+
