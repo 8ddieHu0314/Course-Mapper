@@ -106,7 +106,8 @@ export const useSchedule = () => {
             const updated = await API.updateCourse(
                 schedule.id,
                 courseId,
-                { enrollGroupIndex, meetings: newMeetings }
+                { enrollGroupIndex, meetings: newMeetings },
+                idToken
             );
             setSchedule(updated.schedule);
         } catch (err) {
@@ -119,7 +120,7 @@ export const useSchedule = () => {
         if (!schedule || !idToken) return;
 
         try {
-            const updated = await API.deleteCourse(schedule.id, courseId);
+            const updated = await API.deleteCourse(schedule.id, courseId, idToken);
             setSchedule(updated.schedule);
         } catch (err) {
             console.error("Remove course error:", err);
