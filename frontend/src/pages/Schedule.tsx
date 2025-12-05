@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Grid, Paper, Button, Modal, Text, Stack } from "@mantine/core";
 import { useAuth } from "../hooks/useAuth";
@@ -35,8 +35,22 @@ const SchedulePage = () => {
         }
     }, [user, authLoading, navigate]);
 
+    // Calculate total credits - must be before early returns to follow Rules of Hooks
+    const totalCredits = useMemo(() => {
+        if (!schedule || !schedule.courses) return 0;
+        const total = schedule.courses.reduce((sum, course) => {
+            const units = parseFloat(course.units) || 0;
+            return sum + (isNaN(units) ? 0 : units);
+        }, 0);
+        return isNaN(total) ? 0 : total;
+    }, [schedule]);
+
     if (authLoading || scheduleLoading || !user) {
         return <div>Loading...</div>;
+    }
+
+    if (!schedule) {
+        return <div>No schedule found</div>;
     }
 
     const handleCourseSelect = async (cornellClass: CornellClass) => {
@@ -206,7 +220,21 @@ const SchedulePage = () => {
     return (
         <Container fluid p="md" style={{ width: "100%", maxWidth: "100%" }}>
             <Stack spacing="md">
-                <h1>Course Schedule</h1>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <h1 style={{ margin: 0 }}>Course Schedule</h1>
+                    <span
+                        style={{
+                            color: "#000",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "8px",
+                            padding: "4px 12px",
+                            fontSize: "16px",
+                            fontWeight: "normal",
+                        }}
+                    >
+                        {totalCredits} Credits
+                    </span>
+                </div>
 
                 <Paper p="md" withBorder>
                     <CourseSearch onSelect={handleCourseSelect} />
