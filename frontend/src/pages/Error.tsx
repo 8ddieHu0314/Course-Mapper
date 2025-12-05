@@ -1,14 +1,23 @@
-import { useRouteError } from "react-router-dom";
+import { useRouteError, isRouteErrorResponse } from "react-router-dom";
 
 const ErrorPage = () => {
-    const error = useRouteError() as any;
+    const error = useRouteError();
+
+    let errorMessage: string;
+    if (isRouteErrorResponse(error)) {
+        errorMessage = error.statusText;
+    } else if (error instanceof Error) {
+        errorMessage = error.message;
+    } else {
+        errorMessage = "Unknown error";
+    }
 
     return (
         <div id='error-page'>
             <h1>Oops!</h1>
             <p>Sorry, an unexpected error has occurred.</p>
             <p>
-                <i>{error.statusText || error.message}</i>
+                <i>{errorMessage}</i>
             </p>
         </div>
     );
