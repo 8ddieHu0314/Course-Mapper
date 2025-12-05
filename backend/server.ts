@@ -11,7 +11,6 @@ import cors from "cors";
 import fetch from "node-fetch";
 import { WeatherResponse } from "@full-stack/types";
 import routes from "./routes";
-import { courseDataService } from "./services/courseDataService";
 // Type extensions in ./types/express.d.ts are automatically included by TypeScript
 
 const app: Express = express();
@@ -57,14 +56,6 @@ app.get("/weather", async (req, res) => {
 });
 
 // Start server
-app.listen(port, hostname, async () => {
-    try {
-        // Initialize course data service
-        await courseDataService.initialize();
-        const stats = courseDataService.getStats();
-        console.log("Course data stats:", stats);
-    } catch (error) {
-        console.error("Failed to initialize course data:", error);
-    }
+app.listen(port, hostname, () => {
     console.log(`Server listening on ${hostname}:${port}`);
 });

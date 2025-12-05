@@ -1,5 +1,11 @@
+/**
+ * Main Application Component
+ * Sets up routing, providers, and error boundaries
+ */
+
 import { MantineProvider } from "@mantine/core";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import ErrorPage from "./pages/Error";
 import RootLayout from "./layouts/RootLayout";
 import HomePage from "./pages/Home";
@@ -31,8 +37,10 @@ const router = createBrowserRouter([
 
 export default function App() {
     return (
-        <MantineProvider withGlobalStyles withNormalizeCSS>
-            <RouterProvider router={router} />
-        </MantineProvider>
+        <ErrorBoundary>
+            <MantineProvider withGlobalStyles withNormalizeCSS>
+                <RouterProvider router={router} />
+            </MantineProvider>
+        </ErrorBoundary>
     );
 }

@@ -7,6 +7,7 @@ import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
 import { createCourseColorMap, getCourseMarkerColor } from "../../utils/scheduleTransform";
 import { TBANotice } from "./TBANotice";
 import { RouteList } from "./RouteList";
+import { MAPS_CONFIG } from "../../config/constants";
 import "./MapStyles.css";
 
 interface CourseDayItem {
@@ -83,8 +84,8 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                         m.pattern.includes(dayAbbr)
                     );
 
-                    const fromCoords = fromMeeting?.coordinates || { lat: 42.4534, lng: -76.4735 };
-                    const toCoords = toMeeting?.coordinates || { lat: 42.4545, lng: -76.4745 };
+                    const fromCoords = fromMeeting?.coordinates || MAPS_CONFIG.FALLBACK_COORDS;
+                    const toCoords = toMeeting?.coordinates || MAPS_CONFIG.FALLBACK_COORDS;
 
                     const path = [
                         fromCoords,
@@ -139,8 +140,8 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                 {isLoaded && (
                     <GoogleMap
                         mapContainerStyle={{ width: "100%", height: "100%" }}
-                        center={{ lat: 42.4534, lng: -76.4735 }}
-                        zoom={16}
+                        center={MAPS_CONFIG.DEFAULT_CENTER}
+                        zoom={MAPS_CONFIG.DEFAULT_ZOOM}
                         options={{
                             fullscreenControl: false,
                             mapTypeControl: false,

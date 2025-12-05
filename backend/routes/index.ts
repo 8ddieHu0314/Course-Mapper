@@ -9,7 +9,6 @@ import { AuthenticatedRequest } from "../types/auth";
 import cornellRoutes from "./cornell.routes";
 import mapsRoutes from "./maps.routes";
 import schedulesRoutes from "./schedules.routes";
-import coursesRoutes from "./courses.routes";
 
 const router = Router();
 
@@ -44,7 +43,6 @@ const verifyAuth = async (req: AuthenticatedRequest, res: Response, next: NextFu
 router.use("/cornell", cornellRoutes);
 router.use("/", mapsRoutes); // geocode and directions at root /api level
 router.use("/schedules", verifyAuth, schedulesRoutes);
-router.use("/courses", coursesRoutes);
 
 // Auth verification endpoint
 router.post("/auth/verify", verifyAuth, async (req: AuthenticatedRequest, res) => {

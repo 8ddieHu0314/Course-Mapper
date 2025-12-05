@@ -51,16 +51,6 @@ export const CourseSearch = ({ onSelect }: CourseSearchProps) => {
                     console.error("Cornell API search error:", error);
                 }
 
-                // Search course database by requirements
-                try {
-                    const dbResponse = await API.searchRequirements(value);
-                    if (dbResponse.results && dbResponse.results.length > 0) {
-                        console.log("Database search results:", dbResponse.results);
-                    }
-                } catch (error) {
-                    console.error("Database search error:", error);
-                }
-
                 setCourses(combinedResults);
                 setData(
                     combinedResults.map((c) => {
