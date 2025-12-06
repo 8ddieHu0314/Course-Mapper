@@ -127,7 +127,7 @@ export const Timetable = ({ courses }: TimetableProps) => {
                     }}
                 >
                     <div style={{ height: `${headerOffset}px` }}></div>
-                    {scheduleData.hours.map((hour, idx) => (
+                    {scheduleData.hours.map((hour) => (
                         <div
                             key={hour}
                             style={{
@@ -150,7 +150,7 @@ export const Timetable = ({ courses }: TimetableProps) => {
                         flexDirection: "row", 
                         flex: 1,
                         marginRight: "1rem" }}>
-                    {DAYS.map((day, dayIdx) => {
+                    {DAYS.map((day) => {
                         const dayCourses = getCoursesForDay(day);
                         const columns = getOverlapColumns(dayCourses);
                         

@@ -1,5 +1,5 @@
 import { Text, Paper, Group, ActionIcon, Stack } from "@mantine/core";
-import { ScheduledCourse, CornellClass, ClassSection, ScheduledCourseSection } from "@full-stack/types";
+import { ScheduledCourse, CornellClass, ClassSection } from "@full-stack/types";
 import { IconTrash } from "@tabler/icons-react";
 import { SectionSelector } from "./SectionSelector";
 

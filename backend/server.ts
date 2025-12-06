@@ -1,5 +1,5 @@
 /**
- * Course-Mapper Backend Server
+ * Backend Server
  * 
  * Entry point for the Express server.
  * Routes and business logic are organized in separate modules.
@@ -11,7 +11,6 @@ import cors from "cors";
 import fetch from "node-fetch";
 import { WeatherResponse } from "@full-stack/types";
 import routes from "./routes";
-// Type extensions in ./types/express.d.ts are automatically included by TypeScript
 
 const app: Express = express();
 

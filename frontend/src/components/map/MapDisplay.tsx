@@ -190,37 +190,9 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                 const fromCourse = courses[i];
                 const toCourse = courses[i + 1];
 
-                if (fromCourse.metadata && toCourse.metadata) {
-                    // Get coordinates from meetings
-                    const fromMeeting = fromCourse.metadata.meetings.find((m: ScheduledMeeting) =>
-                        m.pattern.includes(dayAbbr)
-                    );
-                    const toMeeting = toCourse.metadata.meetings.find((m: ScheduledMeeting) =>
-                        m.pattern.includes(dayAbbr)
-                    );
-
-                    const fromCoords = fromMeeting?.coordinates || MAPS_CONFIG.FALLBACK_COORDS;
-                    const toCoords = toMeeting?.coordinates || MAPS_CONFIG.FALLBACK_COORDS;
-
-                    const path = [
-                        fromCoords,
-                        {
-                            lat: (fromCoords.lat + toCoords.lat) / 2,
-                            lng: (fromCoords.lng + toCoords.lng) / 2,
-                        },
-                        toCoords,
-                    ];
-
-                    const fromLabel = `${fromCourse.metadata.subject} ${fromCourse.metadata.catalogNbr}`;
-                    const toLabel = `${toCourse.metadata.subject} ${toCourse.metadata.catalogNbr}`;
-
-                    // Use gray color for routes to distinguish from markers
-                    calculatedRoutes.push({
-                        path,
-                        color: "#666666",
-                        fromCourse: fromLabel,
-                        toCourse: toLabel,
-                    });
+                // Skip if either course doesn't have metadata
+                if (!fromCourse.metadata || !toCourse.metadata) {
+                    continue;
                 }
 
                 // Get meetings for the selected day - ensure we only use meetings for this specific day

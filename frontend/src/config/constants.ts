@@ -1,7 +1,6 @@
 /**
  * Centralized application configuration constants
  * This file contains all configuration values used across the application
- * to avoid hardcoded values scattered throughout the codebase.
  */
 
 /**
@@ -11,7 +10,7 @@ export const ROSTER_CONFIG = {
     /** Default roster for course searches and schedules */
     DEFAULT: "SP26",
     /** Available rosters for selection */
-    AVAILABLE: ["FA25", "SP26", "FA26"] as const,
+    AVAILABLE: ["FA25", "SP26"] as const,
 } as const;
 
 /**
