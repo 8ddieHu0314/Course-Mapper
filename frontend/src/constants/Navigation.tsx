@@ -1,9 +1,6 @@
 import HomePage from "../pages/Home";
 import SchedulePage from "../pages/Schedule";
 import MapViewPage from "../pages/MapView";
-import { Link } from "react-router-dom";
-
-export const BACKEND_BASE_PATH = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 export const PATHS: {
     link: string;
@@ -26,17 +23,4 @@ export const PATHS: {
         element: <MapViewPage />,
     },
 ];
-
-// Simple dummy header component
-export function HeaderSimple({ links }: { links: { link: string; label: string }[] }) {
-    return (
-        <div style={{ padding: '1rem', borderBottom: '1px solid #ccc' }}>
-            {links.map((link) => (
-                <Link key={link.label} to={link.link} style={{ marginRight: '1rem', textDecoration: 'none' }}>
-                    {link.label}
-                </Link>
-            ))}
-        </div>
-    );
-}
 

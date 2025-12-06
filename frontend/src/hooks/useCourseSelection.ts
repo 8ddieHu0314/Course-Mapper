@@ -1,14 +1,56 @@
 /**
- * Course Selection Hook
- * Handles the logic for selecting and adding courses to the schedule
- * with walking time validation
+ * @hook useCourseSelection
+ * @description Handles course selection with walking time validation between classes.
+ *
+ * @purpose
+ * - Validate walking time between adjacent courses before adding
+ * - Show warnings when insufficient walking time is detected
+ * - Cache course data for section selection UI
+ * - Provide a unified course selection handler
+ *
+ * @props {Object} UseCourseSelectionProps
+ * - schedule: Schedule | null - The current schedule to validate against
+ * - addCourse: (cornellClass, enrollGroupIndex, classSectionIndex) => Promise<void>
+ *     Function to actually add the course (from useSchedule)
+ *
+ * @returns {Object}
+ * - walkingWarning: WalkingWarning | null - Warning dialog state when insufficient time
+ * - setWalkingWarning: (warning) => void - Manually control warning state
+ * - handleCourseSelect: (cornellClass) => Promise<void> - Main handler for course selection
+ * - courseDataCache: Map<string, CornellClass> - Cached course data by crseId
+ * - getCourseData: (course) => CornellClass | null - Retrieve cached course data
+ *
+ * @walkingWarning {Object}
+ * - show: boolean - Whether to display the warning modal
+ * - message: string - Warning message explaining the walking time issue
+ * - onConfirm: () => void - Callback to add course despite warning
+ * - onCancel: () => void - Callback to cancel course addition
+ *
+ * @example
+ * const { handleCourseSelect, walkingWarning } = useCourseSelection({
+ *   schedule,
+ *   addCourse,
+ * });
+ *
+ * // In CourseSearch component
+ * <CourseSearch onSelect={handleCourseSelect} />
+ *
+ * // Show warning modal
+ * {walkingWarning && (
+ *   <Modal opened={walkingWarning.show}>
+ *     <Text>{walkingWarning.message}</Text>
+ *     <Button onClick={walkingWarning.onConfirm}>Add Anyway</Button>
+ *     <Button onClick={walkingWarning.onCancel}>Cancel</Button>
+ *   </Modal>
+ * )}
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { CornellClass, Schedule, ScheduledCourse } from "@full-stack/types";
 import { checkWalkingTime, getCoursesForDay } from "../utils/walkingTime";
 import { getDayAbbreviation, DayOfTheWeek } from "../utils/calendar-utils";
 import { SCHEDULE_CONFIG } from "../config/constants";
+import API from "../utils/api";
 
 export interface WalkingWarning {
     show: boolean;
@@ -141,6 +183,56 @@ export function useCourseSelection({
 }: UseCourseSelectionProps): UseCourseSelectionReturn {
     const [walkingWarning, setWalkingWarning] = useState<WalkingWarning | null>(null);
     const [courseDataCache, setCourseDataCache] = useState<Map<string, CornellClass>>(new Map());
+
+    // Fetch course data for scheduled courses that aren't in the cache
+    useEffect(() => {
+        if (!schedule || schedule.courses.length === 0) return;
+
+        const missingCourses = schedule.courses.filter(
+            (course) => !courseDataCache.has(course.crseId.toString())
+        );
+
+        if (missingCourses.length === 0) return;
+
+        const fetchMissingCourseData = async () => {
+            // Fetch all missing courses in parallel for better performance
+            const results = await Promise.all(
+                missingCourses.map(async (course) => {
+                    try {
+                        // Use searchCoursesBySubject (same as CourseSearch component)
+                        const response = await API.searchCoursesBySubject(course.subject);
+                        const classes = response.data?.classes || [];
+                        
+                        // Find the matching course by crseId
+                        const matchingClass = classes.find(
+                            (c) => c.crseId.toString() === course.crseId.toString()
+                        );
+
+                        return { crseId: course.crseId.toString(), data: matchingClass || null };
+                    } catch (error) {
+                        console.error(`Failed to fetch course data for ${course.subject} ${course.catalogNbr}:`, error);
+                        return { crseId: course.crseId.toString(), data: null };
+                    }
+                })
+            );
+
+            const newCache = new Map(courseDataCache);
+            let hasNewData = false;
+
+            for (const result of results) {
+                if (result.data) {
+                    newCache.set(result.crseId, result.data);
+                    hasNewData = true;
+                }
+            }
+
+            if (hasNewData) {
+                setCourseDataCache(newCache);
+            }
+        };
+
+        fetchMissingCourseData();
+    }, [schedule, courseDataCache]);
 
     const getCourseData = useCallback(
         (course: ScheduledCourse): CornellClass | null => {

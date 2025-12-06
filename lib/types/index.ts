@@ -15,6 +15,7 @@ export type CornellClassResponse = {
     };
 };
 
+// What the Cornell Class Roster API Returns
 export type CornellClass = {
     strm: number;
     crseId: number;
@@ -150,6 +151,7 @@ export type Schedule = {
     updatedAt: string;
 };
 
+// What you selected (saved to schedule)
 export type ScheduledCourse = {
     id: string;
     crseId: string;

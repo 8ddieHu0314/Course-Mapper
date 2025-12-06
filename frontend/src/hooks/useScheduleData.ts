@@ -1,3 +1,43 @@
+/**
+ * @hook useScheduleData
+ * @description Transforms raw course data into calendar-ready display format.
+ *
+ * @purpose
+ * - Convert ScheduledCourse[] to CourseBlock[] for calendar rendering
+ * - Organize courses by day of the week
+ * - Calculate time bounds (min/max hours) for the timetable
+ * - Generate hour labels for the calendar grid
+ *
+ * @returns {ScheduleData}
+ * - schedule: ClassesSchedule - Courses organized by day (Monday-Sunday)
+ * - minHour: number - Earliest hour with a class (for grid start)
+ * - maxHour: number - Latest hour with a class (for grid end)
+ * - totalMinutes: number - Total minutes in the display range
+ * - hours: string[] - Hour labels for the time axis
+ *
+ * @performance
+ * - Memoized to prevent recalculation on every render
+ * - Only recalculates when courses array changes
+ *
+ * @example
+ * const { schedule, minHour, hours } = useScheduleData(courses);
+ *
+ * // Render timetable
+ * {WEEKDAYS.map(day => (
+ *   <DayColumn key={day} courses={schedule[day]} />
+ * ))}
+ *
+ * @hook useCoursesForDay
+ * @description Gets courses for a specific day with their original metadata.
+ *
+ * @purpose
+ * - Extract courses for a single day from the schedule
+ * - Attach original ScheduledCourse metadata to each block
+ * - Enable course interactions (click to view details, etc.)
+ *
+ * @returns {Array<{ block: CourseBlock, metadata: ScheduledCourse | null }>}
+ */
+
 import { useMemo } from "react";
 import { ScheduledCourse } from "@full-stack/types";
 import {

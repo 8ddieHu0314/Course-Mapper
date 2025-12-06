@@ -16,13 +16,6 @@ export const timeToMinutes = (time: TimeSlot): number => {
     return time.hour * 60 + time.minute;
 };
 
-export const minutesToTime = (minutes: number): TimeSlot => {
-    return {
-        hour: Math.floor(minutes / 60),
-        minute: minutes % 60,
-    };
-};
-
 export const getCoursesForDay = (courses: ScheduledCourse[], day: string): ScheduledCourse[] => {
     const dayAbbr = getDayAbbreviation(day as DayOfTheWeek);
     return courses.filter(course =>

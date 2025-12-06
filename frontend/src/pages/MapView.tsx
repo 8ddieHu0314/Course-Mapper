@@ -7,9 +7,8 @@ import { useScheduleData, useCoursesForDay } from "../hooks/useScheduleData";
 import { MapDisplay } from "../components/map";
 import { CourseCard } from "../components/course";
 import { DayOfTheWeek } from "../utils/calendar-utils";
+import { SCHEDULE_CONFIG } from "../config/constants";
 import "./MapView.css";
-
-const DAYS: DayOfTheWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 const MapViewPage = () => {
     const navigate = useNavigate();
@@ -51,7 +50,7 @@ const MapViewPage = () => {
                                 <SegmentedControl
                                     value={selectedDay}
                                     onChange={(value) => setSelectedDay(value as DayOfTheWeek)}
-                                    data={DAYS}
+                                    data={[...SCHEDULE_CONFIG.WEEKDAYS]}
                                     fullWidth
                                     style={{ marginTop: "1rem" }}
                                 />

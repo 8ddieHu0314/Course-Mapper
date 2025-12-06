@@ -260,9 +260,11 @@ export function organizeCoursesByDay(
     code: string;
     name: string;
     color: string;
+    borderColor: string;
     timeStart: string;
     timeEnd: string;
     daysOfTheWeek: DayOfTheWeek[];
+    ssrComponent?: string;
   }>
 ): ClassesSchedule {
   const schedule: ClassesSchedule = {
@@ -281,9 +283,11 @@ export function organizeCoursesByDay(
         code: course.code,
         name: course.name,
         color: course.color,
+        borderColor: course.borderColor,
         timeStart: course.timeStart,
         timeEnd: course.timeEnd,
         daysOfTheWeek: [day],
+        ssrComponent: course.ssrComponent,
       });
     });
   });

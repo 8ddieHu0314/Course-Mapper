@@ -1,12 +1,10 @@
-import { Text, Select, MultiSelect, Group, Badge } from "@mantine/core";
-import { ScheduledCourse, ClassSection, ScheduledCourseSection } from "@full-stack/types";
-import { toScheduledSection } from "../../utils/meetingTransform";
-
-interface ClassSectionData {
-    enrollGroupIndex: number;
-    classSectionIndex: number;
-    classSection: ClassSection;
-}
+import { Select, Stack, Divider } from "@mantine/core";
+import { ScheduledCourse, ClassSection } from "@full-stack/types";
+import { ClassSectionData } from "../../types/section";
+import {
+    findPrimarySectionIndex,
+    getSelectedAdditionalIndices,
+} from "../../utils/sectionUtils";
 
 interface SectionSelectorProps {
     course: ScheduledCourse;
@@ -25,7 +23,7 @@ interface SectionSelectorProps {
 }
 
 /**
- * Helper to format a meeting time string
+ * Format meeting times concisely (e.g., "MWF 10:10-11:00")
  */
 function formatMeetingTimes(classSection: ClassSection): string {
     return classSection.meetings
@@ -34,41 +32,18 @@ function formatMeetingTimes(classSection: ClassSection): string {
 }
 
 /**
- * Find the primary section index from the course
+ * Get short component label (LEC → Lecture, DIS → Discussion, etc.)
  */
-function findPrimarySectionIndex(
-    course: ScheduledCourse,
-    allClassSections: ClassSectionData[]
-): number {
-    const isInMultiMode = course.selectedSections && course.selectedSections.length > 0;
-
-    if (isInMultiMode && course.selectedSections && course.selectedSections.length > 0) {
-        const primarySection = course.selectedSections[0];
-        const idx = allClassSections.findIndex(
-            (sectionData) =>
-                sectionData.enrollGroupIndex === primarySection.enrollGroupIndex &&
-                sectionData.classSectionIndex === primarySection.classSectionIndex &&
-                sectionData.classSection.section === primarySection.section &&
-                sectionData.classSection.ssrComponent === primarySection.ssrComponent
-        );
-        return idx >= 0 ? idx : 0;
-    }
-
-    // Use course fields to find the primary section
-    let idx = allClassSections.findIndex(
-        (sectionData) =>
-            sectionData.enrollGroupIndex === course.enrollGroupIndex &&
-            sectionData.classSection.section === course.classSection &&
-            sectionData.classSection.ssrComponent === course.ssrComponent
-    );
-
-    if (idx < 0) {
-        idx = allClassSections.findIndex(
-            (sd) => sd.enrollGroupIndex === course.enrollGroupIndex
-        );
-    }
-
-    return idx >= 0 ? idx : 0;
+function getComponentLabel(ssrComponent: string): string {
+    const labels: Record<string, string> = {
+        "LEC": "Lecture",
+        "DIS": "Discussion",
+        "LAB": "Lab",
+        "REC": "Recitation",
+        "SEM": "Seminar",
+        "STU": "Studio",
+    };
+    return labels[ssrComponent] || ssrComponent;
 }
 
 /**
@@ -82,7 +57,6 @@ export const SectionSelector = ({
 }: SectionSelectorProps) => {
     if (allClassSections.length <= 1) return null;
 
-    const isInMultiMode = course.selectedSections && course.selectedSections.length > 0;
     const primarySectionIndex = findPrimarySectionIndex(course, allClassSections);
     const selectedValue = primarySectionIndex.toString();
 
@@ -91,43 +65,36 @@ export const SectionSelector = ({
         .filter((sectionData) => sectionData.classSection.ssrComponent.includes("LEC"))
         .map((sectionData) => ({
             value: allClassSections.indexOf(sectionData).toString(),
-            label: `${sectionData.classSection.ssrComponent} ${sectionData.classSection.section} - ${formatMeetingTimes(sectionData.classSection)}`,
+            label: `${sectionData.classSection.section} · ${formatMeetingTimes(sectionData.classSection)}`,
         }));
 
     // Get non-lecture sections for additional dropdown
     const additionalSections = allClassSections
         .map((sectionData, idx) => {
             if (sectionData.classSection.ssrComponent.includes("LEC")) return null;
+            const component = getComponentLabel(sectionData.classSection.ssrComponent);
             return {
                 value: idx.toString(),
-                label: `${sectionData.classSection.ssrComponent} ${sectionData.classSection.section} - ${formatMeetingTimes(sectionData.classSection)}`,
+                label: `${component} ${sectionData.classSection.section} · ${formatMeetingTimes(sectionData.classSection)}`,
+                group: component,
             };
         })
-        .filter((item): item is { value: string; label: string } => item !== null);
+        .filter((item): item is { value: string; label: string; group: string } => item !== null);
 
-    // Get currently selected additional sections
-    const selectedAdditionalSections =
-        course.selectedSections && course.selectedSections.length > 1
-            ? course.selectedSections
-                  .slice(1)
-                  .map((section) => {
-                      const idx = allClassSections.findIndex(
-                          (s) =>
-                              s.classSection.section === section.section &&
-                              s.classSection.ssrComponent === section.ssrComponent &&
-                              s.enrollGroupIndex === section.enrollGroupIndex
-                      );
-                      return idx >= 0 ? idx.toString() : "-1";
-                  })
-                  .filter((idx) => idx !== "-1")
-            : [];
+    // Get currently selected additional sections using utility
+    const selectedAdditionalSections = getSelectedAdditionalIndices(course, allClassSections);
 
     return (
-        <>
+        <Stack spacing="xs" mt="sm">
+            <Divider 
+                label="Select Sections" 
+                labelPosition="left" 
+                styles={{ label: { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" } }}
+            />
+            
             {lectureSections.length > 0 && (
                 <Select
-                    label={isInMultiMode ? "Primary Section (Lecture)" : "Section"}
-                    placeholder="Select a lecture section"
+                    placeholder="Select lecture"
                     value={selectedValue}
                     onChange={(value) => {
                         if (value) {
@@ -143,49 +110,34 @@ export const SectionSelector = ({
                         }
                     }}
                     data={lectureSections}
-                    size="sm"
-                    mt="xs"
+                    size="xs"
+                    styles={{
+                        input: { fontFamily: "inherit" },
+                    }}
                 />
             )}
 
             {additionalSections.length > 0 && (
-                <>
-                    <Text size="sm" fw={500} mt="md" mb="xs">
-                        Add Discussion/Recitation/Lab Sections:
-                    </Text>
-                    <MultiSelect
-                        label="Additional Sections"
-                        placeholder="Select discussion, recitation, or lab section"
-                        maxSelectedValues={1}
-                        value={selectedAdditionalSections}
-                        onChange={(values) => {
-                            onMultiSectionChange(
-                                course,
-                                values,
-                                allClassSections,
-                                primarySectionIndex
-                            );
-                        }}
-                        data={additionalSections}
-                        size="sm"
-                        mt="xs"
-                        searchable
-                    />
-                    {course.selectedSections && course.selectedSections.length > 0 && (
-                        <Group spacing="xs" mt="xs">
-                            {course.selectedSections.map((section, idx) => (
-                                <Badge key={idx} size="lg" variant="light">
-                                    {section.ssrComponent} {section.section}
-                                </Badge>
-                            ))}
-                        </Group>
-                    )}
-                    <Text size="xs" c="dimmed" mt="xs">
-                        Click any course block on the calendar to toggle between selected sections
-                    </Text>
-                </>
+                <Select
+                    placeholder="Select discussion/lab"
+                    value={selectedAdditionalSections[0] || null}
+                    onChange={(value) => {
+                        onMultiSectionChange(
+                            course,
+                            value ? [value] : [],
+                            allClassSections,
+                            primarySectionIndex
+                        );
+                    }}
+                    data={additionalSections}
+                    size="xs"
+                    searchable
+                    clearable
+                    styles={{
+                        input: { fontFamily: "inherit" },
+                    }}
+                />
             )}
-        </>
+        </Stack>
     );
 };
-

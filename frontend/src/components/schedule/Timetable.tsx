@@ -6,12 +6,11 @@ import {
     parseTimeString,
     DayOfTheWeek,
 } from "../../utils/calendar-utils";
+import { SCHEDULE_CONFIG } from "../../config/constants";
 
 interface TimetableProps {
     courses: ScheduledCourse[];
 }
-
-const DAYS: DayOfTheWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 export const Timetable = ({ courses }: TimetableProps) => {
     const scheduleData = useScheduleData(courses);
@@ -150,7 +149,7 @@ export const Timetable = ({ courses }: TimetableProps) => {
                         flexDirection: "row", 
                         flex: 1,
                         marginRight: "1rem" }}>
-                    {DAYS.map((day) => {
+                    {SCHEDULE_CONFIG.WEEKDAYS.map((day) => {
                         const dayCourses = getCoursesForDay(day);
                         const columns = getOverlapColumns(dayCourses);
                         

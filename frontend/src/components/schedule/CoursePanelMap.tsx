@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import { Text, Stack, Loader, Center } from "@mantine/core";
 import { GoogleMap, useJsApiLoader, InfoWindow } from "@react-google-maps/api";
-import { CircleMarker } from "./AdvancedMarker";
+import { CircleMarker } from "../map/AdvancedMarker";
 import { ScheduledCourse } from "@full-stack/types";
 import { createCourseColorMap, getCourseMarkerColor, getCourseBackgroundColor } from "../../utils/scheduleTransform";
-import { TBANotice } from "./TBANotice";
-import "./MapStyles.css";
+import { isMultiSectionMode } from "../../utils/sectionUtils";
+import { TBANotice } from "../map/TBANotice";
+import { MAPS_CONFIG } from "../../config/constants";
+import "../map/MapStyles.css";
 
-interface CourseMapPanelProps {
+interface CoursePanelMapProps {
     courses: ScheduledCourse[];
 }
 
@@ -21,10 +23,7 @@ interface CourseLocation {
     ssrComponent: string;
 }
 
-// Cornell campus center coordinates
-const CORNELL_CENTER = { lat: 42.4534, lng: -76.4735 };
-
-export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
+export const CoursePanelMap = ({ courses }: CoursePanelMapProps) => {
     const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
     
     const { isLoaded, loadError } = useJsApiLoader({
@@ -45,8 +44,8 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
             const courseCode = `${course.subject} ${course.catalogNbr}`;
             
             // Check selectedSections first, then fall back to meetings
-            const sections = course.selectedSections && course.selectedSections.length > 0
-                ? course.selectedSections
+            const sections = isMultiSectionMode(course)
+                ? course.selectedSections!
                 : [{ meetings: course.meetings, ssrComponent: course.ssrComponent }];
 
             sections.forEach((section) => {
@@ -89,7 +88,7 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
 
     // Calculate map bounds to fit all markers
     const mapCenter = useMemo(() => {
-        if (courseLocations.length === 0) return CORNELL_CENTER;
+        if (courseLocations.length === 0) return MAPS_CONFIG.DEFAULT_CENTER;
         
         const avgLat = courseLocations.reduce((sum, loc) => sum + loc.coordinates.lat, 0) / courseLocations.length;
         const avgLng = courseLocations.reduce((sum, loc) => sum + loc.coordinates.lng, 0) / courseLocations.length;
@@ -256,3 +255,4 @@ export const CourseMapPanel = ({ courses }: CourseMapPanelProps) => {
         </Stack>
     );
 };
+

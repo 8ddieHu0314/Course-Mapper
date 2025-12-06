@@ -15,7 +15,6 @@ const SchedulePage = () => {
         schedule,
         loading: scheduleLoading,
         addCourse,
-        updateCourseSection,
         updateSelectedSections,
         removeCourse,
     } = useSchedule();
@@ -52,19 +51,6 @@ const SchedulePage = () => {
     if (!schedule) {
         return <div>No schedule found</div>;
     }
-
-    const handleUpdateSection = async (
-        courseId: string,
-        enrollGroupIndex: number,
-        meetings: ScheduledCourse["meetings"]
-    ) => {
-        if (!schedule) return;
-        try {
-            await updateCourseSection(courseId, enrollGroupIndex, meetings);
-        } catch (error) {
-            console.error("Failed to update course:", error);
-        }
-    };
 
     const handleRemoveCourse = async (courseId: string) => {
         if (!schedule) return;
@@ -120,7 +106,6 @@ const SchedulePage = () => {
                             <CoursePanel
                                 courses={schedule?.courses || []}
                                 onRemoveCourse={handleRemoveCourse}
-                                onUpdateSection={handleUpdateSection}
                                 onUpdateSelectedSections={handleUpdateSelectedSections}
                                 getCourseData={getCourseData}
                             />

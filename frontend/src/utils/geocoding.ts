@@ -1,6 +1,7 @@
 import { ScheduledCourse, ScheduledMeeting, ScheduledCourseSection } from "@full-stack/types";
 import API from "./api";
 import classLocationData from "../assets/class_location.json";
+import { isMultiSectionMode } from "./sectionUtils";
 
 // Type for class location data
 interface ClassLocationEntry {
@@ -115,9 +116,9 @@ export const geocodeCourseMeetings = async (course: ScheduledCourse): Promise<Sc
 
     // Geocode selected sections using each section's own classNbr
     let geocodedSelectedSections = course.selectedSections;
-    if (course.selectedSections && course.selectedSections.length > 0) {
+    if (isMultiSectionMode(course)) {
         geocodedSelectedSections = await Promise.all(
-            course.selectedSections.map(section => geocodeSectionMeetings(section))
+            course.selectedSections!.map(section => geocodeSectionMeetings(section))
         );
     }
 
@@ -138,9 +139,3 @@ export const geocodeScheduleCourses = async (courses: ScheduledCourse[]): Promis
     return geocodedCourses;
 };
 
-/**
- * Clear the geocode cache (useful for testing)
- */
-export const clearGeocodeCache = (): void => {
-    geocodeCache.clear();
-};

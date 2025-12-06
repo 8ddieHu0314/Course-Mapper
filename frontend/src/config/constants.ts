@@ -49,8 +49,17 @@ export const API_CONFIG = {
     TIMEOUT_MS: 10000,
     /** Number of retry attempts for failed requests */
     RETRY_ATTEMPTS: 3,
-    /** Cache TTL in milliseconds (5 minutes) */
+    /** Default cache TTL in milliseconds (5 minutes) */
     CACHE_TTL_MS: 5 * 60 * 1000,
+    /** Cache TTLs for specific endpoints */
+    CACHE_TTL: {
+        /** Cornell course search cache (10 minutes) */
+        CORNELL_SEARCH: 10 * 60 * 1000,
+        /** Geocoding cache (24 hours - addresses rarely change) */
+        GEOCODE: 24 * 60 * 60 * 1000,
+        /** Directions cache (1 hour) */
+        DIRECTIONS: 60 * 60 * 1000,
+    },
 } as const;
 
 /**

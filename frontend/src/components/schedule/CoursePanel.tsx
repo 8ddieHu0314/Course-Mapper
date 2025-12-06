@@ -1,20 +1,15 @@
 import { Tabs } from "@mantine/core";
 import { IconList, IconMap } from "@tabler/icons-react";
-import { ScheduledCourse, CornellClass } from "@full-stack/types";
-import { CourseDetails } from "./CourseDetails";
-import { CourseMapPanel } from "../map";
+import { ScheduledCourse, CornellClass, ScheduledCourseSection } from "@full-stack/types";
+import { CoursePanelDetails } from "./CoursePanelDetails";
+import { CoursePanelMap } from "./CoursePanelMap";
 
 interface CoursePanelProps {
     courses: ScheduledCourse[];
     onRemoveCourse: (courseId: string) => void;
-    onUpdateSection: (
-        courseId: string,
-        enrollGroupIndex: number,
-        meetings: ScheduledCourse["meetings"]
-    ) => void;
     onUpdateSelectedSections: (
         courseId: string,
-        selectedSections: ScheduledCourse["selectedSections"]
+        selectedSections: ScheduledCourseSection[]
     ) => void;
     getCourseData: (course: ScheduledCourse) => CornellClass | null;
 }
@@ -22,7 +17,6 @@ interface CoursePanelProps {
 export const CoursePanel = ({
     courses,
     onRemoveCourse,
-    onUpdateSection,
     onUpdateSelectedSections,
     getCourseData,
 }: CoursePanelProps) => {
@@ -30,7 +24,7 @@ export const CoursePanel = ({
         <Tabs defaultValue="details" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
             <Tabs.List>
                 <Tabs.Tab value="details" icon={<IconList size={14} />}>
-                    Course Details
+                    Details
                 </Tabs.Tab>
                 <Tabs.Tab value="map" icon={<IconMap size={14} />}>
                     Map
@@ -38,17 +32,16 @@ export const CoursePanel = ({
             </Tabs.List>
 
             <Tabs.Panel value="details" style={{ flex: 1, overflowY: "auto" }}>
-                <CourseDetails
+                <CoursePanelDetails
                     courses={courses}
                     onRemoveCourse={onRemoveCourse}
-                    onUpdateSection={onUpdateSection}
                     onUpdateSelectedSections={onUpdateSelectedSections}
                     getCourseData={getCourseData}
                 />
             </Tabs.Panel>
 
             <Tabs.Panel value="map" style={{ flex: 1, overflow: "hidden" }}>
-                <CourseMapPanel courses={courses} />
+                <CoursePanelMap courses={courses} />
             </Tabs.Panel>
         </Tabs>
     );

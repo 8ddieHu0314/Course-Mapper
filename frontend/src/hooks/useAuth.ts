@@ -1,3 +1,28 @@
+/**
+ * @hook useAuth
+ * @description Manages Firebase authentication state and provides login/logout functionality.
+ *
+ * @purpose
+ * - Track the current authenticated user
+ * - Handle Google OAuth login flow
+ * - Manage Firebase ID tokens for API authentication
+ * - Provide loading state during auth initialization
+ *
+ * @returns {Object}
+ * - user: User | null - The currently authenticated Firebase user
+ * - idToken: string | null - Firebase ID token for API calls
+ * - loading: boolean - True while auth state is being determined
+ * - loginWithGoogle: () => Promise<User> - Initiates Google OAuth popup login
+ * - logout: () => Promise<void> - Signs out the current user
+ *
+ * @example
+ * const { user, loading, loginWithGoogle, logout } = useAuth();
+ *
+ * if (loading) return <Spinner />;
+ * if (!user) return <LoginButton onClick={loginWithGoogle} />;
+ * return <Dashboard user={user} onLogout={logout} />;
+ */
+
 import { useState, useEffect } from "react";
 import { User, signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../config/firebase";

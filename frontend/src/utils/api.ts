@@ -1,5 +1,5 @@
 import { CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, SchedulesResponse, ScheduledCourse } from "@full-stack/types";
-import { ROSTER_CONFIG } from "../config/constants";
+import { ROSTER_CONFIG, API_CONFIG } from "../config/constants";
 import { apiCache, CacheKeys } from "./apiCache";
 
 // Define BACKEND_BASE_PATH here to avoid circular dependency with Navigation.tsx
@@ -7,13 +7,7 @@ const BACKEND_BASE_PATH = import.meta.env.VITE_API_BASE_URL || 'http://localhost
 const API_BASE = BACKEND_BASE_PATH.replace("/api", "");
 
 const DEFAULT_ROSTER = ROSTER_CONFIG.DEFAULT;
-
-// Cache TTLs for different endpoints
-const CACHE_TTL = {
-    CORNELL_SEARCH: 10 * 60 * 1000, // 10 minutes
-    GEOCODE: 24 * 60 * 60 * 1000,   // 24 hours (addresses rarely change)
-    DIRECTIONS: 60 * 60 * 1000,     // 1 hour
-};
+const CACHE_TTL = API_CONFIG.CACHE_TTL;
 
 const API = {
     async request<T>(
@@ -44,18 +38,6 @@ const API = {
     },
 
     // Cornell Course Roster API (with caching)
-    async searchCourses(query: string, roster = DEFAULT_ROSTER): Promise<CornellClassResponse> {
-        const cacheKey = CacheKeys.cornellSearch(query, roster);
-        const cached = apiCache.get<CornellClassResponse>(cacheKey);
-        if (cached) return cached;
-
-        const result = await API.request<CornellClassResponse>(
-            `/api/cornell/search?q=${encodeURIComponent(query)}&roster=${roster}`
-        );
-        apiCache.set(cacheKey, result, CACHE_TTL.CORNELL_SEARCH);
-        return result;
-    },
-
     async searchCoursesBySubject(subject: string, roster = DEFAULT_ROSTER): Promise<CornellClassResponse> {
         const cacheKey = CacheKeys.cornellSubject(subject, roster);
         const cached = apiCache.get<CornellClassResponse>(cacheKey);

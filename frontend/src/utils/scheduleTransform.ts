@@ -1,5 +1,6 @@
 import { ScheduledCourse } from "@full-stack/types";
 import { CourseBlock, DayOfTheWeek, formatTime, getDaysOfTheWeek, getDayAbbreviation } from "./calendar-utils";
+import { isMultiSectionMode } from "./sectionUtils";
 
 /**
  * Color palette for courses - distinct, visually appealing colors
@@ -96,8 +97,8 @@ export function transformScheduledCoursesToCourseBlocks(
     const borderColor = getCourseMarkerColor(courseCode, colorMap);
 
     // Handle courses with selectedSections (multi-section mode)
-    if (course.selectedSections && course.selectedSections.length > 0) {
-      course.selectedSections.forEach((section) => {
+    if (isMultiSectionMode(course)) {
+      course.selectedSections!.forEach((section) => {
         section.meetings.forEach((meeting) => {
           const days = getDaysOfTheWeek(meeting.pattern) as DayOfTheWeek[];
           if (days.length === 0) return;
@@ -167,8 +168,8 @@ export function getCourseMetadata(
       // Check if course has a meeting matching the day and time
       const dayAbbr = getDayAbbreviation(day);
 
-      if (course.selectedSections && course.selectedSections.length > 0) {
-        return course.selectedSections.some((section) =>
+      if (isMultiSectionMode(course)) {
+        return course.selectedSections!.some((section) =>
           section.meetings.some(
             (m) =>
               m.pattern.includes(dayAbbr) &&

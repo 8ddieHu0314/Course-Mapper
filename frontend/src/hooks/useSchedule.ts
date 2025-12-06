@@ -1,3 +1,39 @@
+/**
+ * @hook useSchedule
+ * @description Manages the user's course schedule with full CRUD operations and geocoding.
+ *
+ * @purpose
+ * - Load and persist the user's schedule from/to the backend API
+ * - Add, update, and remove courses from the schedule
+ * - Automatically geocode course locations for map display
+ * - Manage multi-section course selections (lecture + discussion/lab)
+ *
+ * @returns {Object}
+ * - schedule: Schedule | null - The current schedule with all courses
+ * - loading: boolean - True while schedule is being loaded
+ * - error: string | null - Error message if loading failed
+ * - addCourse: (cornellClass, enrollGroupIndex, classSectionIndex?) => Promise<void>
+ *     Adds a new course to the schedule
+ * - updateCourseSection: (courseId, enrollGroupIndex, meetings) => Promise<void>
+ *     Updates a course's section and meetings
+ * - updateSelectedSections: (courseId, selectedSections) => Promise<void>
+ *     Updates multi-section selections for a course
+ * - removeCourse: (courseId) => Promise<void> - Removes a course from the schedule
+ * - refreshSchedule: () => Promise<void> - Reloads the schedule from the server
+ *
+ * @sideEffects
+ * - Automatically loads schedule on mount when authenticated
+ * - Geocodes course locations in the background
+ * - Persists changes to backend API
+ *
+ * @example
+ * const { schedule, loading, addCourse, removeCourse } = useSchedule();
+ *
+ * const handleAddCourse = async (course: CornellClass) => {
+ *   await addCourse(course, 0, 0); // Add with first enroll group and section
+ * };
+ */
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Schedule, ScheduledCourse, CornellClass } from "@full-stack/types";
 import API from "../utils/api";
