@@ -5,6 +5,8 @@ import {
     getBlockStyle,
     parseTimeString,
     DayOfTheWeek,
+    getDayAbbreviation,
+    formatTime,
 } from "../../utils/calendar-utils";
 import { SCHEDULE_CONFIG } from "../../config/constants";
 
@@ -14,6 +16,35 @@ interface TimetableProps {
 
 export const Timetable = ({ courses }: TimetableProps) => {
     const scheduleData = useScheduleData(courses);
+
+    // Get section-specific ssrComponent by matching the block's time/day to the correct section
+    const getSectionComponent = (
+        metadata: ScheduledCourse,
+        day: DayOfTheWeek,
+        timeStart: string,
+        blockSsrComponent?: string
+    ): string => {
+        // Use block's ssrComponent if available
+        if (blockSsrComponent) return blockSsrComponent;
+
+        // Look up from selectedSections if available
+        if (metadata.selectedSections && metadata.selectedSections.length > 0) {
+            const dayAbbr = getDayAbbreviation(day);
+            const matchingSection = metadata.selectedSections.find((section) =>
+                section.meetings.some(
+                    (m) =>
+                        m.pattern.includes(dayAbbr) &&
+                        formatTime(m.timeStart) === timeStart
+                )
+            );
+            if (matchingSection?.ssrComponent) {
+                return matchingSection.ssrComponent;
+            }
+        }
+
+        // Fallback to course-level ssrComponent
+        return metadata.ssrComponent;
+    };
 
     // Get courses for a specific day with metadata
     const getCoursesForDay = (day: DayOfTheWeek) => {
@@ -245,7 +276,7 @@ export const Timetable = ({ courses }: TimetableProps) => {
                                                     {block.code}
                                                 </div>
                                                 <div style={{ fontSize: "10px", color: "#666" }}>
-                                                    {block.ssrComponent || metadata.ssrComponent}
+                                                    {getSectionComponent(metadata, day, block.timeStart, block.ssrComponent)}
                                                 </div>
                                                 <div style={{ fontSize: "10px" }}>
                                                     {block.timeStart} - {block.timeEnd}
