@@ -4,8 +4,9 @@ import API from "../utils/api";
 import { useAuth } from "./useAuth";
 import { geocodeCourseMeetings, geocodeScheduleCourses } from "../utils/geocoding";
 import { toScheduledSection, toScheduledMeetings } from "../utils/meetingTransform";
+import { ROSTER_CONFIG } from "../config/constants";
 
-const ROSTER = "SP26";
+const ROSTER = ROSTER_CONFIG.DEFAULT;
 
 export const useSchedule = () => {
     const { idToken } = useAuth();

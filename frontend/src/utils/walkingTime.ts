@@ -1,5 +1,6 @@
 import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
 import API from "./api";
+import { getDayAbbreviation, DayOfTheWeek } from "./calendar-utils";
 
 export type TimeSlot = {
     hour: number;
@@ -22,26 +23,15 @@ export const minutesToTime = (minutes: number): TimeSlot => {
     };
 };
 
-export const getDayAbbreviation = (day: string): string => {
-    const dayMap: Record<string, string> = {
-        Monday: "M",
-        Tuesday: "T",
-        Wednesday: "W",
-        Thursday: "R",
-        Friday: "F",
-    };
-    return dayMap[day] || day;
-};
-
 export const getCoursesForDay = (courses: ScheduledCourse[], day: string): ScheduledCourse[] => {
-    const dayAbbr = getDayAbbreviation(day);
+    const dayAbbr = getDayAbbreviation(day as DayOfTheWeek);
     return courses.filter(course =>
         course.meetings.some(meeting => meeting.pattern.includes(dayAbbr))
     );
 };
 
 export const getMeetingsForDay = (course: ScheduledCourse, day: string): ScheduledMeeting[] => {
-    const dayAbbr = getDayAbbreviation(day);
+    const dayAbbr = getDayAbbreviation(day as DayOfTheWeek);
     return course.meetings.filter(meeting => meeting.pattern.includes(dayAbbr));
 };
 
@@ -51,7 +41,7 @@ export const checkWalkingTime = async (
     nextCourse: ScheduledCourse | null,
     day: string
 ): Promise<{ insufficient: boolean; message?: string }> => {
-    const dayAbbr = getDayAbbreviation(day);
+    const dayAbbr = getDayAbbreviation(day as DayOfTheWeek);
     
     // Get meetings for this day
     const currentMeetings = currentCourse.meetings.filter(m => m.pattern.includes(dayAbbr));

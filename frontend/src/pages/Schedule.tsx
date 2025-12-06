@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Container, Grid, Paper, Button, Modal, Text, Stack } from "@mantine/core";
 import { useAuth } from "../hooks/useAuth";
 import { useSchedule } from "../hooks/useSchedule";
+import { useCourseSelection } from "../hooks/useCourseSelection";
 import { CourseSearch } from "../components/course";
 import { Timetable, CoursePanel } from "../components/schedule";
-import { CornellClass, ScheduledCourse } from "@full-stack/types";
-import { checkWalkingTime, getCoursesForDay } from "../utils/walkingTime";
+import { ScheduledCourse } from "@full-stack/types";
 
 const SchedulePage = () => {
     const navigate = useNavigate();
@@ -19,16 +19,16 @@ const SchedulePage = () => {
         updateSelectedSections,
         removeCourse,
     } = useSchedule();
-    const [courseDataCache, setCourseDataCache] = useState<
-        Map<string, CornellClass>
-    >(new Map());
-    const [walkingWarning, setWalkingWarning] = useState<{
-        show: boolean;
-        message: string;
-        onConfirm: () => void;
-        onCancel: () => void;
-    } | null>(null);
 
+    // Use the extracted course selection hook
+    const {
+        walkingWarning,
+        setWalkingWarning,
+        handleCourseSelect,
+        getCourseData,
+    } = useCourseSelection({ schedule, addCourse });
+
+    // Redirect to home if not authenticated
     useEffect(() => {
         if (!authLoading && !user) {
             navigate("/");
@@ -184,7 +184,6 @@ const SchedulePage = () => {
         meetings: ScheduledCourse["meetings"]
     ) => {
         if (!schedule) return;
-
         try {
             await updateCourseSection(courseId, enrollGroupIndex, meetings);
         } catch (error) {
@@ -194,7 +193,6 @@ const SchedulePage = () => {
 
     const handleRemoveCourse = async (courseId: string) => {
         if (!schedule) return;
-
         try {
             await removeCourse(courseId);
         } catch (error) {
@@ -211,10 +209,6 @@ const SchedulePage = () => {
         } catch (error) {
             console.error("Failed to update selected sections:", error);
         }
-    };
-
-    const getCourseData = (course: ScheduledCourse): CornellClass | null => {
-        return courseDataCache.get(course.crseId.toString()) || null;
     };
 
     return (
@@ -260,6 +254,7 @@ const SchedulePage = () => {
                 </Grid>
             </Stack>
 
+            {/* Walking Time Warning Modal */}
             <Modal
                 opened={walkingWarning?.show || false}
                 onClose={() => setWalkingWarning(null)}
@@ -280,4 +275,3 @@ const SchedulePage = () => {
 };
 
 export default SchedulePage;
-

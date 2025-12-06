@@ -9,6 +9,7 @@ import { TBANotice } from "./TBANotice";
 import { RouteList } from "./RouteList";
 import API from "../../utils/api";
 import { decodePolyline } from "../../utils/polyline";
+import { MAPS_CONFIG } from "../../config/constants";
 import "./MapStyles.css";
 
 interface CourseDayItem {
@@ -189,9 +190,37 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                 const fromCourse = courses[i];
                 const toCourse = courses[i + 1];
 
-                // Validate both courses have metadata
-                if (!fromCourse.metadata || !toCourse.metadata) {
-                    continue;
+                if (fromCourse.metadata && toCourse.metadata) {
+                    // Get coordinates from meetings
+                    const fromMeeting = fromCourse.metadata.meetings.find((m: ScheduledMeeting) =>
+                        m.pattern.includes(dayAbbr)
+                    );
+                    const toMeeting = toCourse.metadata.meetings.find((m: ScheduledMeeting) =>
+                        m.pattern.includes(dayAbbr)
+                    );
+
+                    const fromCoords = fromMeeting?.coordinates || MAPS_CONFIG.FALLBACK_COORDS;
+                    const toCoords = toMeeting?.coordinates || MAPS_CONFIG.FALLBACK_COORDS;
+
+                    const path = [
+                        fromCoords,
+                        {
+                            lat: (fromCoords.lat + toCoords.lat) / 2,
+                            lng: (fromCoords.lng + toCoords.lng) / 2,
+                        },
+                        toCoords,
+                    ];
+
+                    const fromLabel = `${fromCourse.metadata.subject} ${fromCourse.metadata.catalogNbr}`;
+                    const toLabel = `${toCourse.metadata.subject} ${toCourse.metadata.catalogNbr}`;
+
+                    // Use gray color for routes to distinguish from markers
+                    calculatedRoutes.push({
+                        path,
+                        color: "#666666",
+                        fromCourse: fromLabel,
+                        toCourse: toLabel,
+                    });
                 }
 
                 // Get meetings for the selected day - ensure we only use meetings for this specific day
@@ -390,8 +419,8 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                 {isLoaded && (
                     <GoogleMap
                         mapContainerStyle={{ width: "100%", height: "100%" }}
-                        center={{ lat: 42.4534, lng: -76.4735 }}
-                        zoom={16}
+                        center={MAPS_CONFIG.DEFAULT_CENTER}
+                        zoom={MAPS_CONFIG.DEFAULT_ZOOM}
                         options={{
                             fullscreenControl: false,
                             mapTypeControl: false,

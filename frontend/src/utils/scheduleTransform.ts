@@ -76,34 +76,6 @@ export function getCourseBackgroundColor(courseCode: string, colorMap: Map<strin
 }
 
 /**
- * Legacy function - Gets a color for a course based on subject and component type
- * @deprecated Use createCourseColorMap and getCourseMarkerColor instead
- */
-export function getCourseColor(subject: string, component: string): string {
-  // Different colors for different component types
-  const componentColorMap: Record<string, string> = {
-    "LEC": "#e3f2fd",
-    "DIS": "#f3e5f5", 
-    "REC": "#e8f5e9",
-    "LAB": "#fff3e0",
-    "PRJ": "#fce4ec",
-  };
-  
-  const componentKey = component.split(" ")[0] || "LEC";
-  if (componentColorMap[componentKey]) {
-    return componentColorMap[componentKey];
-  }
-  
-  // Simple hash function for consistent colors
-  let hash = 0;
-  for (let i = 0; i < subject.length; i++) {
-    hash = subject.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash % 360);
-  return `hsl(${hue}, 70%, 85%)`;
-}
-
-/**
  * Transforms ScheduledCourse[] to CourseBlock[] format for calendar display
  * Handles both regular meetings and selectedSections
  * Uses unified color system - each course gets a unique color

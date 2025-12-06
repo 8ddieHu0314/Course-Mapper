@@ -1,8 +1,19 @@
-import { CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, SchedulesResponse, CourseSearchResponse, RequirementsResponse, ScheduledCourse } from "@full-stack/types";
+import { CornellClassResponse, GeocodeResponse, DirectionsResponse, Schedule, SchedulesResponse, ScheduledCourse } from "@full-stack/types";
+import { ROSTER_CONFIG } from "../config/constants";
+import { apiCache, CacheKeys } from "./apiCache";
 
 // Define BACKEND_BASE_PATH here to avoid circular dependency with Navigation.tsx
 const BACKEND_BASE_PATH = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 const API_BASE = BACKEND_BASE_PATH.replace("/api", "");
+
+const DEFAULT_ROSTER = ROSTER_CONFIG.DEFAULT;
+
+// Cache TTLs for different endpoints
+const CACHE_TTL = {
+    CORNELL_SEARCH: 10 * 60 * 1000, // 10 minutes
+    GEOCODE: 24 * 60 * 60 * 1000,   // 24 hours (addresses rarely change)
+    DIRECTIONS: 60 * 60 * 1000,     // 1 hour
+};
 
 const API = {
     async request<T>(
@@ -32,52 +43,85 @@ const API = {
         return response.json();
     },
 
-    // Cornell Course Roster API
-    async searchCourses(query: string, roster = "SP26"): Promise<CornellClassResponse> {
-        return API.request<CornellClassResponse>(`/api/cornell/search?q=${encodeURIComponent(query)}&roster=${roster}`);
+    // Cornell Course Roster API (with caching)
+    async searchCourses(query: string, roster = DEFAULT_ROSTER): Promise<CornellClassResponse> {
+        const cacheKey = CacheKeys.cornellSearch(query, roster);
+        const cached = apiCache.get<CornellClassResponse>(cacheKey);
+        if (cached) return cached;
+
+        const result = await API.request<CornellClassResponse>(
+            `/api/cornell/search?q=${encodeURIComponent(query)}&roster=${roster}`
+        );
+        apiCache.set(cacheKey, result, CACHE_TTL.CORNELL_SEARCH);
+        return result;
     },
 
-    async searchCoursesBySubject(subject: string, roster = "SP26"): Promise<CornellClassResponse> {
-        return API.request<CornellClassResponse>(`/api/cornell/search?subject=${encodeURIComponent(subject)}&roster=${roster}`);
+    async searchCoursesBySubject(subject: string, roster = DEFAULT_ROSTER): Promise<CornellClassResponse> {
+        const cacheKey = CacheKeys.cornellSubject(subject, roster);
+        const cached = apiCache.get<CornellClassResponse>(cacheKey);
+        if (cached) return cached;
+
+        const result = await API.request<CornellClassResponse>(
+            `/api/cornell/search?subject=${encodeURIComponent(subject)}&roster=${roster}`
+        );
+        apiCache.set(cacheKey, result, CACHE_TTL.CORNELL_SEARCH);
+        return result;
     },
 
-    // Google Maps API
+    // Google Maps API (with caching)
     async geocode(address: string): Promise<GeocodeResponse> {
-        return API.request<GeocodeResponse>("/api/geocode", {
+        const cacheKey = CacheKeys.geocode(address);
+        const cached = apiCache.get<GeocodeResponse>(cacheKey);
+        if (cached) return cached;
+
+        const result = await API.request<GeocodeResponse>("/api/geocode", {
             method: "POST",
             body: JSON.stringify({ address }),
         });
+        apiCache.set(cacheKey, result, CACHE_TTL.GEOCODE);
+        return result;
     },
 
     async getDirections(
         origin: { lat: number; lng: number } | string,
         destination: { lat: number; lng: number } | string
     ): Promise<DirectionsResponse> {
-        return API.request<DirectionsResponse>("/api/directions", {
+        // Generate cache key from coordinates
+        const originCoords = typeof origin === "string" 
+            ? origin 
+            : `${origin.lat.toFixed(5)},${origin.lng.toFixed(5)}`;
+        const destCoords = typeof destination === "string"
+            ? destination
+            : `${destination.lat.toFixed(5)},${destination.lng.toFixed(5)}`;
+        const cacheKey = `directions:${originCoords}:${destCoords}`;
+        
+        const cached = apiCache.get<DirectionsResponse>(cacheKey);
+        if (cached) return cached;
+
+        const result = await API.request<DirectionsResponse>("/api/directions", {
             method: "POST",
             body: JSON.stringify({ origin, destination }),
         });
+        apiCache.set(cacheKey, result, CACHE_TTL.DIRECTIONS);
+        return result;
     },
 
-    // Course Search API
-    async searchCourseById(courseId: number): Promise<CourseSearchResponse> {
-        return API.request<CourseSearchResponse>(`/api/courses/search/by-id?courseId=${courseId}`);
+    /**
+     * Clear all cached API responses
+     */
+    clearCache(): void {
+        apiCache.clear();
     },
 
-    async searchRequirements(query: string): Promise<{ results: unknown[]; count: number }> {
-        return API.request<{ results: unknown[]; count: number }>(`/api/courses/search/requirements?q=${encodeURIComponent(query)}`);
-    },
-
-    async getCoursesByRequirement(requirementName: string): Promise<CourseSearchResponse> {
-        return API.request<CourseSearchResponse>(`/api/courses/search/by-requirement?requirementName=${encodeURIComponent(requirementName)}`);
-    },
-
-    async getAllRequirements(): Promise<RequirementsResponse> {
-        return API.request<RequirementsResponse>("/api/courses/requirements");
+    /**
+     * Get cache statistics
+     */
+    getCacheStats() {
+        return apiCache.getStats();
     },
 
     // Schedule Management - Backend Firebase API
-    async getSchedules(roster = "SP26", token: string): Promise<SchedulesResponse> {
+    async getSchedules(roster = DEFAULT_ROSTER, token: string): Promise<SchedulesResponse> {
         return API.request<SchedulesResponse>(
             `/api/schedules?roster=${encodeURIComponent(roster)}`,
             {},
