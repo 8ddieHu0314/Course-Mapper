@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Grid, Paper, Stack, SegmentedControl, Title } from "@mantine/core";
+import { Container, Grid } from "@mantine/core";
 import { useAuth } from "../hooks/useAuth";
 import { useSchedule } from "../hooks/useSchedule";
 import { useScheduleData, useCoursesForDay } from "../hooks/useScheduleData";
 import { MapDisplay } from "../components/map";
-import { CourseCard } from "../components/course";
+import { DayCourseView } from "../components/map/DayCourseView";
 import { DayOfTheWeek } from "../utils/calendar-utils";
-import { SCHEDULE_CONFIG } from "../config/constants";
 import "./MapView.css";
 
 const MapViewPage = () => {
@@ -43,38 +42,11 @@ const MapViewPage = () => {
             <Grid style={{ flex: 1, width: "100%" }} gutter="md">
                 {/* Left Side - Day Calendar */}
                 <Grid.Col span={5} className="map-view-left">
-                    <Paper p="md" withBorder style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                        <Stack spacing="md" style={{ flex: 1 }}>
-                            <div>
-                                <Title order={2}>Day View</Title>
-                                <SegmentedControl
-                                    value={selectedDay}
-                                    onChange={(value) => setSelectedDay(value as DayOfTheWeek)}
-                                    data={[...SCHEDULE_CONFIG.WEEKDAYS]}
-                                    fullWidth
-                                    style={{ marginTop: "1rem" }}
-                                />
-                            </div>
-
-                            {/* Course List for Selected Day */}
-                            <div className="courses-list" style={{ flex: 1, overflowY: "auto" }}>
-                                {selectedDayCourses.length > 0 ? (
-                                    <Stack spacing="xs">
-                                        {selectedDayCourses.map((item, idx) => (
-                                            <CourseCard
-                                                key={idx}
-                                                block={item.block}
-                                                metadata={item.metadata}
-                                                day={selectedDay}
-                                            />
-                                        ))}
-                                    </Stack>
-                                ) : (
-                                    <div className="no-courses">No classes on this day</div>
-                                )}
-                            </div>
-                        </Stack>
-                    </Paper>
+                    <DayCourseView
+                        selectedDay={selectedDay}
+                        setSelectedDay={setSelectedDay}
+                        selectedDayCourses={selectedDayCourses}
+                    />
                 </Grid.Col>
 
                 {/* Right Side - Google Maps */}

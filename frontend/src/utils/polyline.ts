@@ -1,9 +1,3 @@
-/**
- * Decodes a Google Maps encoded polyline string into an array of coordinates
- * Implements the polyline encoding algorithm from Google Maps
- * @param encoded - The encoded polyline string from Google Maps API
- * @returns Array of {lat, lng} coordinate objects
- */
 export function decodePolyline(encoded: string): Array<{ lat: number; lng: number }> {
     if (!encoded || typeof encoded !== 'string' || encoded.length === 0) {
         return [];

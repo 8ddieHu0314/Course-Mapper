@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Paper, Loader, Center, Text } from "@mantine/core";
 import { GoogleMap, useJsApiLoader, Polyline, InfoWindow } from "@react-google-maps/api";
 import { CircleMarker } from "./AdvancedMarker";
 import { DayOfTheWeek, getDayAbbreviation } from "../../utils/calendar-utils";
 import { ScheduledCourse, ScheduledMeeting } from "@full-stack/types";
 import { createCourseColorMap, getCourseMarkerColor } from "../../utils/scheduleTransform";
+import { isMultiSectionMode } from "../../utils/sectionUtils";
 import { TBANotice } from "./TBANotice";
 import { RouteList } from "./RouteList";
 import API from "../../utils/api";
@@ -28,20 +29,16 @@ interface MapDisplayProps {
 }
 
 export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
-    // Cache routes by day to avoid recalculating when switching days
-    // Store both the routes and the coursesKey that was used to generate them
-    // Use a ref to track the current cache so useMemo can read the latest value
-    const [routesCache, setRoutesCache] = useState<Map<DayOfTheWeek, {
-        routes: Array<{
-            path: Array<{ lat: number; lng: number }>;
-            color: string;
-            fromCourse: string;
-            toCourse: string;
-        }>;
-        coursesKey: string;
-    }>>(new Map());
-    const routesCacheRef = useRef(routesCache);
-    routesCacheRef.current = routesCache;
+    // Simple state for current routes - cleared immediately when day changes
+    const [routes, setRoutes] = useState<Array<{
+        path: Array<{ lat: number; lng: number }>;
+        color: string;
+        fromCourse: string;
+        toCourse: string;
+    }>>([]);
+    
+    // Track which day the current routes belong to
+    const [routesDay, setRoutesDay] = useState<DayOfTheWeek | null>(null);
     
     const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
     
@@ -64,19 +61,37 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
         return getCourseMarkerColor(courseCode, courseColorMap);
     };
 
+    // Helper to find the meeting for a specific day from either meetings or selectedSections
+    const findDayMeeting = useCallback((course: ScheduledCourse | null | undefined): ScheduledMeeting | undefined => {
+        if (!course) return undefined;
+        
+        // Check selectedSections first if in multi-section mode
+        if (isMultiSectionMode(course)) {
+            for (const section of course.selectedSections!) {
+                const meeting = section.meetings.find((m: ScheduledMeeting) => 
+                    m.pattern.includes(dayAbbr)
+                );
+                if (meeting && meeting.coordinates) {
+                    return meeting;
+                }
+            }
+        }
+        
+        // Fall back to regular meetings
+        return course.meetings.find((m: ScheduledMeeting) => m.pattern.includes(dayAbbr));
+    }, [dayAbbr]);
+
     // Compute TBA courses for the notice
     const tbaCourses = useMemo(() => {
         return courses
             .filter((course) => {
-                const dayMeeting = course.metadata?.meetings.find(
-                    (m: ScheduledMeeting) => m.pattern.includes(dayAbbr)
-                );
+                const dayMeeting = findDayMeeting(course.metadata);
                 return dayMeeting && (!dayMeeting.coordinates || dayMeeting.displayLocation === "TBA");
             })
             .map((course) => ({
                 courseCode: `${course.metadata?.subject} ${course.metadata?.catalogNbr}`,
             }));
-    }, [courses, dayAbbr]);
+    }, [courses, findDayMeeting]);
 
     // Track if component is mounted to prevent state updates after unmount
     const mountedRef = useRef(true);
@@ -88,93 +103,32 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
         };
     }, []);
 
-    // Create a stable key for courses to detect when they actually change
-    // This key includes the day so we can detect when courses change for a specific day
-    const coursesKey = useMemo(() => {
-        return `${day}-${courses
-            .map((c) => {
-                if (!c.metadata) return '';
-                const dayMeeting = c.metadata.meetings.find((m: ScheduledMeeting) =>
-                    m.pattern.includes(dayAbbr)
-                );
-                return `${c.metadata.subject}-${c.metadata.catalogNbr}-${dayMeeting?.coordinates?.lat}-${dayMeeting?.coordinates?.lng}`;
-            })
-            .join('|')}`;
-    }, [courses, day, dayAbbr]);
-
-    // Get routes for current day from cache (if coursesKey matches)
-    // Use useMemo to ensure routes update when day or coursesKey changes
-    // We need to track the cache size and the specific day's cache to detect changes
-    const [cacheVersion, setCacheVersion] = useState(0);
-    
-    const routes = useMemo(() => {
-        // Read from ref to get the latest cache value
-        const cachedData = routesCacheRef.current.get(day);
-        // Only return routes if they match the current day and coursesKey exactly
-        // Add strict validation: cached data must exist, match day, and match coursesKey
-        if (cachedData && cachedData.coursesKey === coursesKey) {
-            // Additional validation: ensure coursesKey starts with the current day
-            // This prevents routes from other days from being returned
-            if (cachedData.coursesKey.startsWith(`${day}-`)) {
-                // Double-check: ensure we're only returning routes for the current day
-                // Return a new array reference to avoid mutation issues
-                return [...cachedData.routes];
-            }
-        }
-        // Return empty array if no cache, coursesKey doesn't match, or day doesn't match
-        return [];
-    }, [cacheVersion, day, coursesKey]);
-
     // Clear routes immediately when day changes to prevent showing stale routes
-    // This ensures routes useMemo returns empty array immediately when day changes
-    useEffect(() => {
-        // Immediately clear routes for the new day by removing it from cache
-        // This ensures routes useMemo returns empty array before new routes are calculated
-        setRoutesCache((prev) => {
-            const newCache = new Map(prev);
-            // Remove the entry for the current day to force recalculation
-            newCache.delete(day);
-            // Update ref synchronously to ensure routes useMemo sees the cleared cache
-            routesCacheRef.current = newCache;
-            // Increment cacheVersion to trigger useMemo recalculation
-            setCacheVersion((v) => v + 1);
-            return newCache;
-        });
-    }, [day]);
-
-    useEffect(() => {
-        // Check if routes for this day are already cached with matching coursesKey
-        // Use routesCacheRef to get the latest cache state
-        const cachedData = routesCacheRef.current.get(day);
-        if (cachedData && cachedData.coursesKey === coursesKey) {
-            // Routes already exist for this day with matching courses, no need to recalculate
-            return;
+    // Use useLayoutEffect to run synchronously before browser paint
+    useLayoutEffect(() => {
+        // If day changed, clear routes immediately before new ones are calculated
+        if (routesDay !== day) {
+            setRoutes([]);
+            setRoutesDay(day);
         }
+    }, [day, routesDay]);
 
+    // Calculate routes when day or courses change
+    useEffect(() => {
         // Early return if no courses or only one course (no routes possible)
         if (courses.length < 2) {
-            // Cache empty routes for this day to ensure no routes are shown
-            setRoutesCache((prev) => {
-                const newCache = new Map(prev);
-                newCache.set(day, { routes: [], coursesKey });
-                // Update ref synchronously to ensure routes useMemo sees the update
-                routesCacheRef.current = newCache;
-                setCacheVersion((v) => v + 1); // Increment to trigger useMemo update
-                return newCache;
-            });
+            setRoutes([]);
             return;
         }
 
         // Create AbortController for cleanup
         const abortController = new AbortController();
-        // Store the day and coursesKey at the start of calculation to validate later
+        // Store the day at the start of calculation to validate later
         const calculationDay = day;
-        const calculationCoursesKey = coursesKey;
 
         const calculateRoutes = async () => {
-            // Validate we're still calculating for the correct day and courses
-            // If day or courses changed, abort calculation
-            if (calculationDay !== day || calculationCoursesKey !== coursesKey) {
+            // Validate we're still calculating for the correct day
+            if (calculationDay !== day) {
                 return;
             }
 
@@ -195,13 +149,9 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                     continue;
                 }
 
-                // Get meetings for the selected day - ensure we only use meetings for this specific day
-                const fromMeeting = fromCourse.metadata.meetings.find((m: ScheduledMeeting) =>
-                    m.pattern.includes(dayAbbr)
-                );
-                const toMeeting = toCourse.metadata.meetings.find((m: ScheduledMeeting) =>
-                    m.pattern.includes(dayAbbr)
-                );
+                // Get meetings for the selected day - check both meetings and selectedSections
+                const fromMeeting = findDayMeeting(fromCourse.metadata);
+                const toMeeting = findDayMeeting(toCourse.metadata);
 
                 // Validate meetings exist (they should already be filtered by dayAbbr)
                 if (!fromMeeting || !toMeeting) {
@@ -320,9 +270,9 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                 return;
             }
 
-            // Validate we're still on the same day and coursesKey hasn't changed
-            // If day or courses changed during calculation, don't cache these routes
-            if (calculationDay !== day || calculationCoursesKey !== coursesKey) {
+            // Validate we're still on the same day
+            // If day changed during calculation, don't update routes
+            if (calculationDay !== day) {
                 return;
             }
 
@@ -336,36 +286,18 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                 })
                 .filter((route): route is NonNullable<typeof route> => route !== null);
 
-            // Update cache with routes for this day
-            // Add validation: only cache routes if they match the current day and coursesKey
-            if (mountedRef.current && !abortController.signal.aborted) {
-                // Double-check that we're still on the same day and coursesKey hasn't changed
-                // This prevents caching routes for the wrong day if user switches days quickly
-                const currentCachedData = routesCacheRef.current.get(day);
-                if (currentCachedData && currentCachedData.coursesKey !== coursesKey) {
-                    // coursesKey has changed, don't cache these routes
-                    return;
-                }
-                
-                setRoutesCache((prev) => {
-                    const newCache = new Map(prev);
-                    // Only set routes for the current day with the current coursesKey
-                    newCache.set(day, { routes: calculatedRoutes, coursesKey });
-                    // Update ref synchronously to ensure routes useMemo sees the update immediately
-                    routesCacheRef.current = newCache;
-                    setCacheVersion((v) => v + 1); // Increment to trigger useMemo update
-                    return newCache;
-                });
+            // Update routes state only if still on the same day and not aborted
+            if (mountedRef.current && !abortController.signal.aborted && calculationDay === day) {
+                setRoutes(calculatedRoutes);
             }
         };
 
         calculateRoutes();
 
-        // Cleanup function
         return () => {
             abortController.abort();
         };
-    }, [coursesKey, day, dayAbbr]);
+    }, [courses, day, findDayMeeting]);
 
     return (
         <Paper p="md" withBorder style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -400,8 +332,8 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                             clickableIcons: false,
                         }}
                     >
-                        {/* Draw routes between classes */}
-                        {routes.map((route, idx) => {
+                        {/* Draw routes between classes - only if routes belong to current day */}
+                        {routesDay === day && routes.map((route, idx) => {
                             // Validate route has valid path before rendering
                             if (!route.path || route.path.length < 2) {
                                 return null;
@@ -413,8 +345,8 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                                     path={route.path}
                                     options={{
                                         strokeColor: route.color,
-                                        strokeOpacity: 0.8,
-                                        strokeWeight: 4,
+                                        strokeOpacity: 1,
+                                        strokeWeight: 10,
                                         geodesic: true,
                                     }}
                                 />
@@ -423,9 +355,7 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
 
                         {/* Mark class locations */}
                         {courses.map((course, idx) => {
-                            const dayMeeting = course.metadata?.meetings.find(
-                                (m: ScheduledMeeting) => m.pattern.includes(dayAbbr)
-                            );
+                            const dayMeeting = findDayMeeting(course.metadata);
 
                             if (!dayMeeting || !dayMeeting.coordinates) return null;
 
@@ -449,9 +379,7 @@ export const MapDisplay = ({ courses, day, allCourses }: MapDisplayProps) => {
                                 const label = `${c.metadata?.subject} ${c.metadata?.catalogNbr}`;
                                 return label === selectedMarker;
                             });
-                            const dayMeeting = selectedCourse?.metadata?.meetings.find(
-                                (m: ScheduledMeeting) => m.pattern.includes(dayAbbr)
-                            );
+                            const dayMeeting = findDayMeeting(selectedCourse?.metadata);
                             if (!dayMeeting?.coordinates) return null;
 
                             return (
