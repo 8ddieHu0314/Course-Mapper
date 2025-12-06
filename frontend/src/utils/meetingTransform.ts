@@ -23,7 +23,7 @@ export function toScheduledMeetings(meetings: Meeting[]): ScheduledMeeting[] {
 }
 
 /**
- * Transforms a Cornell API ClassSection to a ScheduledCourseSection
+ * Transfsorms a Cornell API ClassSection to a ScheduledCourseSection
  */
 export function toScheduledSection(
     classSection: ClassSection,
