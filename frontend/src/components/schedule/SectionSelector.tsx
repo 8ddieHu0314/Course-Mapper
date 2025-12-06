@@ -124,27 +124,29 @@ export const SectionSelector = ({
 
     return (
         <>
-            <Select
-                label={isInMultiMode ? "Primary Section (Lecture)" : "Section"}
-                placeholder="Select a lecture section"
-                value={selectedValue}
-                onChange={(value) => {
-                    if (value) {
-                        const index = parseInt(value);
-                        const sectionData = allClassSections[index];
-                        if (sectionData) {
-                            onSectionChange(
-                                course,
-                                sectionData.enrollGroupIndex,
-                                sectionData.classSection
-                            );
+            {lectureSections.length > 0 && (
+                <Select
+                    label={isInMultiMode ? "Primary Section (Lecture)" : "Section"}
+                    placeholder="Select a lecture section"
+                    value={selectedValue}
+                    onChange={(value) => {
+                        if (value) {
+                            const index = parseInt(value);
+                            const sectionData = allClassSections[index];
+                            if (sectionData) {
+                                onSectionChange(
+                                    course,
+                                    sectionData.enrollGroupIndex,
+                                    sectionData.classSection
+                                );
+                            }
                         }
-                    }
-                }}
-                data={lectureSections}
-                size="sm"
-                mt="xs"
-            />
+                    }}
+                    data={lectureSections}
+                    size="sm"
+                    mt="xs"
+                />
+            )}
 
             {additionalSections.length > 0 && (
                 <>
